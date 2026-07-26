@@ -121,9 +121,30 @@ namespace BeverageWebsite.DAL
         /// <returns>The number of rows affected.</returns>
         public int AddItem(int cartId, int productId, int quantity)
         {
+            if (cartId <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(cartId), "Cart identifier must be greater than zero.");
+            }
+
+            if (productId <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(productId), "Product identifier must be greater than zero.");
+            }
+
+            if (quantity <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(quantity), "Quantity must be greater than zero.");
+            }
+
             const string sql = @"SELECT @UnitPrice = Price
                                  FROM dbo.Product
-                                 WHERE ProductId = @ProductId;
+                                 WHERE ProductId = @ProductId AND IsActive = 1;
+
+                                 IF @UnitPrice IS NULL
+                                 BEGIN
+                                     RAISERROR ('Product does not exist or is inactive.', 16, 1);
+                                     RETURN;
+                                 END
 
                                  IF EXISTS (SELECT 1 FROM dbo.CartItem WHERE CartId = @CartId AND ProductId = @ProductId)
                                  BEGIN
@@ -167,6 +188,16 @@ namespace BeverageWebsite.DAL
         /// <returns>The number of rows affected.</returns>
         public int UpdateQuantity(int cartItemId, int quantity)
         {
+            if (cartItemId <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(cartItemId), "Cart item identifier must be greater than zero.");
+            }
+
+            if (quantity <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(quantity), "Quantity must be greater than zero.");
+            }
+
             const string sql = @"UPDATE dbo.CartItem SET Quantity = @Quantity WHERE CartItemId = @CartItemId";
             var parameters = new[]
             {
