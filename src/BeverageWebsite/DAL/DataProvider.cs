@@ -26,6 +26,78 @@ namespace BeverageWebsite.DAL
         }
 
         /// <summary>
+        /// Executes the specified operation within a SQL Server transaction.
+        /// </summary>
+        /// <typeparam name="T">The type of value returned by the transaction operation.</typeparam>
+        /// <param name="operation">The operation to execute with the active SQL connection and transaction.</param>
+        /// <param name="isolationLevel">The isolation level to use for the transaction.</param>
+        /// <returns>The value produced by the operation after the transaction is committed.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="operation"/> is null.</exception>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown when the connection, transaction, operation, commit, or rollback fails. If rollback also fails,
+        /// the inner <see cref="AggregateException"/> contains both the original and rollback exceptions.
+        /// </exception>
+        public T ExecuteInTransaction<T>(
+            Func<SqlConnection, SqlTransaction, T> operation,
+            IsolationLevel isolationLevel = IsolationLevel.ReadCommitted)
+        {
+            if (operation == null)
+            {
+                throw new ArgumentNullException(nameof(operation));
+            }
+
+            try
+            {
+                using (var connection = new SqlConnection(_connectionString))
+                {
+                    connection.Open();
+
+                    using (var transaction = connection.BeginTransaction(isolationLevel))
+                    {
+                        try
+                        {
+                            var result = operation(connection, transaction);
+                            transaction.Commit();
+                            return result;
+                        }
+                        catch (Exception ex)
+                        {
+                            try
+                            {
+                                transaction.Rollback();
+                            }
+                            catch (Exception rollbackException)
+                            {
+                                var combinedException = new AggregateException(
+                                    "The transaction operation and rollback both failed.",
+                                    ex,
+                                    rollbackException);
+
+                                throw new InvalidOperationException(
+                                    "The transaction failed and rollback also failed.",
+                                    combinedException);
+                            }
+
+                            throw new InvalidOperationException(
+                                "The transaction operation failed and was rolled back.",
+                                ex);
+                        }
+                    }
+                }
+            }
+            catch (InvalidOperationException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException(
+                    $"Failed to execute transaction. Details: {ex.Message}",
+                    ex);
+            }
+        }
+
+        /// <summary>
         /// Executes a SQL command that does not return a result set.
         /// </summary>
         /// <param name="commandText">The SQL command text to execute.</param>
