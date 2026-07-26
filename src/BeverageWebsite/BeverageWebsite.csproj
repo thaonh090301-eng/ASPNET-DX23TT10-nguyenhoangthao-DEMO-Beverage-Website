@@ -84,6 +84,7 @@
     <Compile Include="DAL\InventoryDAL.cs" />
     <Compile Include="DAL\CartDAL.cs" />
     <Compile Include="DAL\OrderDAL.cs" />
+    <Compile Include="DAL\AddressDAL.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Global.asax" />
