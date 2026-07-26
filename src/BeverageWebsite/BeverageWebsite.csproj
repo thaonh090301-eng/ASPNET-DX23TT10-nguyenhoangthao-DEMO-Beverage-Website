@@ -32,6 +32,8 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Configuration" />
+    <Reference Include="System.Data" />
     <Reference Include="System.Web" />
     <Reference Include="System.Web.Abstractions" />
     <Reference Include="System.Web.Routing" />
@@ -75,6 +77,7 @@
     <Compile Include="Models\Review.cs" />
     <Compile Include="Models\Shipment.cs" />
     <Compile Include="Models\User.cs" />
+    <Compile Include="DAL\DataProvider.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Global.asax" />
