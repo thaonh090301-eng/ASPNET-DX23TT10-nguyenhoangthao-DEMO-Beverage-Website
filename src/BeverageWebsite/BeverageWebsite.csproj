@@ -78,6 +78,7 @@
     <Compile Include="Models\Shipment.cs" />
     <Compile Include="Models\User.cs" />
     <Compile Include="DAL\DataProvider.cs" />
+    <Compile Include="DAL\CategoryDAL.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Global.asax" />
