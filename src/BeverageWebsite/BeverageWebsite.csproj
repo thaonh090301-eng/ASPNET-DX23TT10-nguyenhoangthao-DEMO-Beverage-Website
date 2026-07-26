@@ -81,6 +81,7 @@
     <Compile Include="DAL\CategoryDAL.cs" />
     <Compile Include="DAL\ProductDAL.cs" />
     <Compile Include="DAL\UserDAL.cs" />
+    <Compile Include="DAL\InventoryDAL.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Global.asax" />
