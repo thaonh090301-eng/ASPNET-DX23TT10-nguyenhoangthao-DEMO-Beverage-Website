@@ -80,6 +80,7 @@
     <Compile Include="DAL\DataProvider.cs" />
     <Compile Include="DAL\CategoryDAL.cs" />
     <Compile Include="DAL\ProductDAL.cs" />
+    <Compile Include="DAL\UserDAL.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Global.asax" />
