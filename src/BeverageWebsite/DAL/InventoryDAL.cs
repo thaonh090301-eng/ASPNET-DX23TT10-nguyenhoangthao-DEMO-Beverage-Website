@@ -153,14 +153,39 @@ namespace BeverageWebsite.DAL
                 throw new ArgumentNullException(nameof(inventory));
             }
 
-            const string sql = @"UPDATE dbo.Inventory SET ProductId = @ProductId, StockQuantity = @StockQuantity, ReorderLevel = @ReorderLevel, LastUpdatedAt = @LastUpdatedAt WHERE InventoryId = @InventoryId";
+            if (inventory.InventoryId <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(inventory.InventoryId), "InventoryId must be greater than zero.");
+            }
+
+            if (inventory.ProductId <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(inventory.ProductId), "ProductId must be greater than zero.");
+            }
+
+            if (inventory.StockQuantity < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(inventory.StockQuantity), "StockQuantity must be greater than or equal to zero.");
+            }
+
+            if (inventory.ReorderLevel < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(inventory.ReorderLevel), "ReorderLevel must be greater than or equal to zero.");
+            }
+
+            const string sql = @"UPDATE dbo.Inventory
+SET StockQuantity = @StockQuantity,
+    ReorderLevel = @ReorderLevel,
+    LastUpdatedAt = @LastUpdatedAt
+WHERE InventoryId = @InventoryId
+  AND ProductId = @ProductId";
             var parameters = new[]
             {
                 new SqlParameter("@InventoryId", SqlDbType.Int) { Value = inventory.InventoryId },
                 new SqlParameter("@ProductId", SqlDbType.Int) { Value = inventory.ProductId },
                 new SqlParameter("@StockQuantity", SqlDbType.Int) { Value = inventory.StockQuantity },
                 new SqlParameter("@ReorderLevel", SqlDbType.Int) { Value = inventory.ReorderLevel },
-                new SqlParameter("@LastUpdatedAt", SqlDbType.DateTime2) { Value = inventory.LastUpdatedAt }
+                new SqlParameter("@LastUpdatedAt", SqlDbType.DateTime2) { Scale = 7, Value = inventory.LastUpdatedAt }
             };
 
             try
