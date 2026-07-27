@@ -155,13 +155,18 @@ namespace BeverageWebsite.DAL
                 throw new ArgumentNullException(nameof(product));
             }
 
+            if (product.Price < 0m)
+            {
+                throw new ArgumentOutOfRangeException(nameof(product.Price), "Product price must be greater than or equal to zero.");
+            }
+
             const string sql = @"INSERT INTO dbo.Product (CategoryId, ProductName, Description, Price, ImageUrl, IsActive) VALUES (@CategoryId, @ProductName, @Description, @Price, @ImageUrl, @IsActive)";
             var parameters = new[]
             {
                 new SqlParameter("@CategoryId", SqlDbType.Int) { Value = product.CategoryId },
                 new SqlParameter("@ProductName", SqlDbType.NVarChar, 200) { Value = product.ProductName ?? string.Empty },
                 new SqlParameter("@Description", SqlDbType.NVarChar, 1000) { Value = (object)product.Description ?? DBNull.Value },
-                new SqlParameter("@Price", SqlDbType.Decimal) { Value = product.Price },
+                CreatePriceParameter(product.Price),
                 new SqlParameter("@ImageUrl", SqlDbType.NVarChar, 500) { Value = (object)product.ImageUrl ?? DBNull.Value },
                 new SqlParameter("@IsActive", SqlDbType.Bit) { Value = product.IsActive }
             };
@@ -188,6 +193,11 @@ namespace BeverageWebsite.DAL
                 throw new ArgumentNullException(nameof(product));
             }
 
+            if (product.Price < 0m)
+            {
+                throw new ArgumentOutOfRangeException(nameof(product.Price), "Product price must be greater than or equal to zero.");
+            }
+
             const string sql = @"UPDATE dbo.Product SET CategoryId = @CategoryId, ProductName = @ProductName, Description = @Description, Price = @Price, ImageUrl = @ImageUrl, IsActive = @IsActive WHERE ProductId = @ProductId";
             var parameters = new[]
             {
@@ -195,7 +205,7 @@ namespace BeverageWebsite.DAL
                 new SqlParameter("@CategoryId", SqlDbType.Int) { Value = product.CategoryId },
                 new SqlParameter("@ProductName", SqlDbType.NVarChar, 200) { Value = product.ProductName ?? string.Empty },
                 new SqlParameter("@Description", SqlDbType.NVarChar, 1000) { Value = (object)product.Description ?? DBNull.Value },
-                new SqlParameter("@Price", SqlDbType.Decimal) { Value = product.Price },
+                CreatePriceParameter(product.Price),
                 new SqlParameter("@ImageUrl", SqlDbType.NVarChar, 500) { Value = (object)product.ImageUrl ?? DBNull.Value },
                 new SqlParameter("@IsActive", SqlDbType.Bit) { Value = product.IsActive }
             };
@@ -231,6 +241,16 @@ namespace BeverageWebsite.DAL
             {
                 throw new InvalidOperationException($"Failed to delete product {id}. Details: {ex.Message}", ex);
             }
+        }
+
+        private static SqlParameter CreatePriceParameter(decimal value)
+        {
+            return new SqlParameter("@Price", SqlDbType.Decimal)
+            {
+                Precision = 12,
+                Scale = 2,
+                Value = value
+            };
         }
 
         private static Product MapProduct(SqlDataReader reader)
