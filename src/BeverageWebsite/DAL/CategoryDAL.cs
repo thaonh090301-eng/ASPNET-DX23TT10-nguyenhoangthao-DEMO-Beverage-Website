@@ -11,6 +11,9 @@ namespace BeverageWebsite.DAL
     /// </summary>
     public class CategoryDAL
     {
+        private const int CategoryNameMaxLength = 100;
+        private const int DescriptionMaxLength = 500;
+
         private readonly DataProvider _dataProvider;
 
         /// <summary>
@@ -42,7 +45,7 @@ namespace BeverageWebsite.DAL
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Failed to retrieve categories. Details: {ex.Message}", ex);
+                throw new InvalidOperationException("Failed to retrieve categories.", ex);
             }
 
             return categories;
@@ -55,6 +58,8 @@ namespace BeverageWebsite.DAL
         /// <returns>A <see cref="Category"/> object if found; otherwise, null.</returns>
         public Category GetById(int id)
         {
+            ValidateCategoryId(id, nameof(id));
+
             const string sql = @"SELECT CategoryId, CategoryName, Description, IsActive FROM dbo.Category WHERE CategoryId = @CategoryId";
             var parameters = new[]
             {
@@ -73,7 +78,7 @@ namespace BeverageWebsite.DAL
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Failed to retrieve category by id {id}. Details: {ex.Message}", ex);
+                throw new InvalidOperationException("Failed to retrieve the category.", ex);
             }
 
             return null;
@@ -91,22 +96,40 @@ namespace BeverageWebsite.DAL
                 throw new ArgumentNullException(nameof(category));
             }
 
+            var categoryName = NormalizeRequiredString(
+                category.CategoryName,
+                CategoryNameMaxLength,
+                nameof(category.CategoryName));
+            var description = NormalizeOptionalString(
+                category.Description,
+                DescriptionMaxLength,
+                nameof(category.Description));
+
             const string sql = @"INSERT INTO dbo.Category (CategoryName, Description, IsActive) VALUES (@CategoryName, @Description, @IsActive)";
             var parameters = new[]
             {
-                new SqlParameter("@CategoryName", SqlDbType.NVarChar, 100) { Value = category.CategoryName ?? string.Empty },
-                new SqlParameter("@Description", SqlDbType.NVarChar, 500) { Value = (object)category.Description ?? DBNull.Value },
+                new SqlParameter("@CategoryName", SqlDbType.NVarChar, CategoryNameMaxLength) { Value = categoryName },
+                new SqlParameter("@Description", SqlDbType.NVarChar, DescriptionMaxLength) { Value = (object)description ?? DBNull.Value },
                 new SqlParameter("@IsActive", SqlDbType.Bit) { Value = category.IsActive }
             };
 
+            int affectedRows;
+
             try
             {
-                return _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
+                affectedRows = _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Failed to insert category. Details: {ex.Message}", ex);
+                throw new InvalidOperationException("Failed to insert the category.", ex);
             }
+
+            if (affectedRows != 1)
+            {
+                throw new InvalidOperationException("The category insert did not affect exactly one record.");
+            }
+
+            return affectedRows;
         }
 
         /// <summary>
@@ -121,23 +144,48 @@ namespace BeverageWebsite.DAL
                 throw new ArgumentNullException(nameof(category));
             }
 
+            ValidateCategoryId(category.CategoryId, nameof(category.CategoryId));
+
+            var categoryName = NormalizeRequiredString(
+                category.CategoryName,
+                CategoryNameMaxLength,
+                nameof(category.CategoryName));
+            var description = NormalizeOptionalString(
+                category.Description,
+                DescriptionMaxLength,
+                nameof(category.Description));
+
             const string sql = @"UPDATE dbo.Category SET CategoryName = @CategoryName, Description = @Description, IsActive = @IsActive WHERE CategoryId = @CategoryId";
             var parameters = new[]
             {
                 new SqlParameter("@CategoryId", SqlDbType.Int) { Value = category.CategoryId },
-                new SqlParameter("@CategoryName", SqlDbType.NVarChar, 100) { Value = category.CategoryName ?? string.Empty },
-                new SqlParameter("@Description", SqlDbType.NVarChar, 500) { Value = (object)category.Description ?? DBNull.Value },
+                new SqlParameter("@CategoryName", SqlDbType.NVarChar, CategoryNameMaxLength) { Value = categoryName },
+                new SqlParameter("@Description", SqlDbType.NVarChar, DescriptionMaxLength) { Value = (object)description ?? DBNull.Value },
                 new SqlParameter("@IsActive", SqlDbType.Bit) { Value = category.IsActive }
             };
 
+            int affectedRows;
+
             try
             {
-                return _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
+                affectedRows = _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Failed to update category. Details: {ex.Message}", ex);
+                throw new InvalidOperationException("Failed to update the category.", ex);
             }
+
+            if (affectedRows == 0)
+            {
+                throw new InvalidOperationException("The category was not found.");
+            }
+
+            if (affectedRows != 1)
+            {
+                throw new InvalidOperationException("The category update did not affect exactly one record.");
+            }
+
+            return affectedRows;
         }
 
         /// <summary>
@@ -147,6 +195,8 @@ namespace BeverageWebsite.DAL
         /// <returns>The number of rows affected.</returns>
         public int Delete(int id)
         {
+            ValidateCategoryId(id, nameof(id));
+
             const string sql = @"DELETE FROM dbo.Category WHERE CategoryId = @CategoryId";
             var parameters = new[]
             {
@@ -159,19 +209,66 @@ namespace BeverageWebsite.DAL
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Failed to delete category {id}. Details: {ex.Message}", ex);
+                throw new InvalidOperationException("Failed to delete the category.", ex);
             }
         }
 
         private static Category MapCategory(SqlDataReader reader)
         {
+            var categoryIdOrdinal = reader.GetOrdinal("CategoryId");
+            var categoryNameOrdinal = reader.GetOrdinal("CategoryName");
+            var descriptionOrdinal = reader.GetOrdinal("Description");
+            var isActiveOrdinal = reader.GetOrdinal("IsActive");
+
             return new Category
             {
-                CategoryId = reader.IsDBNull(reader.GetOrdinal("CategoryId")) ? 0 : reader.GetInt32(reader.GetOrdinal("CategoryId")),
-                CategoryName = reader.IsDBNull(reader.GetOrdinal("CategoryName")) ? null : reader.GetString(reader.GetOrdinal("CategoryName")),
-                Description = reader.IsDBNull(reader.GetOrdinal("Description")) ? null : reader.GetString(reader.GetOrdinal("Description")),
-                IsActive = reader.IsDBNull(reader.GetOrdinal("IsActive")) ? false : reader.GetBoolean(reader.GetOrdinal("IsActive"))
+                CategoryId = reader.IsDBNull(categoryIdOrdinal) ? 0 : reader.GetInt32(categoryIdOrdinal),
+                CategoryName = reader.IsDBNull(categoryNameOrdinal) ? null : reader.GetString(categoryNameOrdinal),
+                Description = reader.IsDBNull(descriptionOrdinal) ? null : reader.GetString(descriptionOrdinal),
+                IsActive = reader.IsDBNull(isActiveOrdinal) ? false : reader.GetBoolean(isActiveOrdinal)
             };
+        }
+
+        private static void ValidateCategoryId(int categoryId, string parameterName)
+        {
+            if (categoryId <= 0)
+            {
+                throw new ArgumentOutOfRangeException(parameterName, "The category identifier must be greater than zero.");
+            }
+        }
+
+        private static string NormalizeRequiredString(string value, int maxLength, string parameterName)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                throw new ArgumentException("A required category value must be provided.", parameterName);
+            }
+
+            var normalizedValue = value.Trim();
+
+            if (normalizedValue.Length > maxLength)
+            {
+                throw new ArgumentException("A category value exceeds the allowed maximum length.", parameterName);
+            }
+
+            return normalizedValue;
+        }
+
+        private static string NormalizeOptionalString(string value, int maxLength, string parameterName)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return null;
+            }
+
+            var normalizedValue = value.Trim();
+
+            if (normalizedValue.Length > maxLength)
+            {
+                throw new ArgumentException("A category value exceeds the allowed maximum length.", parameterName);
+            }
+
+            return normalizedValue;
         }
     }
 }
