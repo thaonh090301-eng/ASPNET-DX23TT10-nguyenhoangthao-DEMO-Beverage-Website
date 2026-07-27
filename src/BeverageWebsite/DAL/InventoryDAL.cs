@@ -55,6 +55,11 @@ namespace BeverageWebsite.DAL
         /// <returns>An <see cref="Inventory"/> object if found; otherwise, null.</returns>
         public Inventory GetById(int inventoryId)
         {
+            if (inventoryId <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(inventoryId), "The inventory identifier must be greater than zero.");
+            }
+
             const string sql = @"SELECT InventoryId, ProductId, StockQuantity, ReorderLevel, LastUpdatedAt FROM dbo.Inventory WHERE InventoryId = @InventoryId";
             var parameters = new[]
             {
@@ -73,7 +78,7 @@ namespace BeverageWebsite.DAL
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Failed to retrieve inventory by id {inventoryId}. Details: {ex.Message}", ex);
+                throw new InvalidOperationException("Failed to retrieve the inventory record.", ex);
             }
 
             return null;
@@ -86,6 +91,11 @@ namespace BeverageWebsite.DAL
         /// <returns>An <see cref="Inventory"/> object if found; otherwise, null.</returns>
         public Inventory GetByProductId(int productId)
         {
+            if (productId <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(productId), "The product identifier must be greater than zero.");
+            }
+
             const string sql = @"SELECT InventoryId, ProductId, StockQuantity, ReorderLevel, LastUpdatedAt FROM dbo.Inventory WHERE ProductId = @ProductId";
             var parameters = new[]
             {
@@ -104,7 +114,7 @@ namespace BeverageWebsite.DAL
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Failed to retrieve inventory by product id {productId}. Details: {ex.Message}", ex);
+                throw new InvalidOperationException("Failed to retrieve the inventory record.", ex);
             }
 
             return null;
@@ -122,23 +132,47 @@ namespace BeverageWebsite.DAL
                 throw new ArgumentNullException(nameof(inventory));
             }
 
+            if (inventory.ProductId <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(inventory.ProductId), "The product identifier must be greater than zero.");
+            }
+
+            if (inventory.StockQuantity < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(inventory.StockQuantity), "The stock quantity must be greater than or equal to zero.");
+            }
+
+            if (inventory.ReorderLevel < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(inventory.ReorderLevel), "The reorder level must be greater than or equal to zero.");
+            }
+
             const string sql = @"INSERT INTO dbo.Inventory (ProductId, StockQuantity, ReorderLevel, LastUpdatedAt) VALUES (@ProductId, @StockQuantity, @ReorderLevel, @LastUpdatedAt)";
             var parameters = new[]
             {
                 new SqlParameter("@ProductId", SqlDbType.Int) { Value = inventory.ProductId },
                 new SqlParameter("@StockQuantity", SqlDbType.Int) { Value = inventory.StockQuantity },
                 new SqlParameter("@ReorderLevel", SqlDbType.Int) { Value = inventory.ReorderLevel },
-                new SqlParameter("@LastUpdatedAt", SqlDbType.DateTime2) { Value = inventory.LastUpdatedAt }
+                CreateLastUpdatedAtParameter(inventory.LastUpdatedAt)
             };
+
+            int affectedRows;
 
             try
             {
-                return _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
+                affectedRows = _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Failed to insert inventory. Details: {ex.Message}", ex);
+                throw new InvalidOperationException("Failed to insert the inventory record.", ex);
             }
+
+            if (affectedRows != 1)
+            {
+                throw new InvalidOperationException("The inventory insert did not affect exactly one record.");
+            }
+
+            return affectedRows;
         }
 
         /// <summary>
@@ -185,17 +219,31 @@ WHERE InventoryId = @InventoryId
                 new SqlParameter("@ProductId", SqlDbType.Int) { Value = inventory.ProductId },
                 new SqlParameter("@StockQuantity", SqlDbType.Int) { Value = inventory.StockQuantity },
                 new SqlParameter("@ReorderLevel", SqlDbType.Int) { Value = inventory.ReorderLevel },
-                new SqlParameter("@LastUpdatedAt", SqlDbType.DateTime2) { Scale = 7, Value = inventory.LastUpdatedAt }
+                CreateLastUpdatedAtParameter(inventory.LastUpdatedAt)
             };
+
+            int affectedRows;
 
             try
             {
-                return _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
+                affectedRows = _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Failed to update inventory. Details: {ex.Message}", ex);
+                throw new InvalidOperationException("Failed to update the inventory record.", ex);
             }
+
+            if (affectedRows == 0)
+            {
+                throw new InvalidOperationException("The expected inventory record was not found.");
+            }
+
+            if (affectedRows != 1)
+            {
+                throw new InvalidOperationException("The inventory update did not affect exactly one record.");
+            }
+
+            return affectedRows;
         }
 
         /// <summary>
@@ -206,22 +254,46 @@ WHERE InventoryId = @InventoryId
         /// <returns>The number of rows affected.</returns>
         public int UpdateStock(int productId, int quantity)
         {
+            if (productId <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(productId), "The product identifier must be greater than zero.");
+            }
+
+            if (quantity < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(quantity), "The stock quantity must be greater than or equal to zero.");
+            }
+
             const string sql = @"UPDATE dbo.Inventory SET StockQuantity = @Quantity, LastUpdatedAt = @LastUpdatedAt WHERE ProductId = @ProductId";
             var parameters = new[]
             {
                 new SqlParameter("@ProductId", SqlDbType.Int) { Value = productId },
                 new SqlParameter("@Quantity", SqlDbType.Int) { Value = quantity },
-                new SqlParameter("@LastUpdatedAt", SqlDbType.DateTime2) { Value = DateTime.UtcNow }
+                CreateLastUpdatedAtParameter(DateTime.UtcNow)
             };
+
+            int affectedRows;
 
             try
             {
-                return _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
+                affectedRows = _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Failed to update stock for product {productId}. Details: {ex.Message}", ex);
+                throw new InvalidOperationException("Failed to update the inventory stock.", ex);
             }
+
+            if (affectedRows == 0)
+            {
+                throw new InvalidOperationException("No inventory record was found for the product.");
+            }
+
+            if (affectedRows != 1)
+            {
+                throw new InvalidOperationException("The stock update did not affect exactly one record.");
+            }
+
+            return affectedRows;
         }
 
         /// <summary>
@@ -231,6 +303,11 @@ WHERE InventoryId = @InventoryId
         /// <returns>The number of rows affected.</returns>
         public int Delete(int inventoryId)
         {
+            if (inventoryId <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(inventoryId), "The inventory identifier must be greater than zero.");
+            }
+
             const string sql = @"DELETE FROM dbo.Inventory WHERE InventoryId = @InventoryId";
             var parameters = new[]
             {
@@ -243,8 +320,17 @@ WHERE InventoryId = @InventoryId
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Failed to delete inventory {inventoryId}. Details: {ex.Message}", ex);
+                throw new InvalidOperationException("Failed to delete the inventory record.", ex);
             }
+        }
+
+        private static SqlParameter CreateLastUpdatedAtParameter(DateTime value)
+        {
+            return new SqlParameter("@LastUpdatedAt", SqlDbType.DateTime2)
+            {
+                Scale = 7,
+                Value = value
+            };
         }
 
         private static Inventory MapInventory(SqlDataReader reader)
