@@ -221,13 +221,12 @@ namespace BeverageWebsite.DAL
                 throw new ArgumentNullException(nameof(user));
             }
 
-            const string sql = @"UPDATE dbo.[User] SET UserName = @UserName, Email = @Email, PasswordHash = @PasswordHash, FullName = @FullName, Phone = @Phone, Role = @Role, IsActive = @IsActive WHERE UserId = @UserId";
+            const string sql = @"UPDATE dbo.[User] SET UserName = @UserName, Email = @Email, FullName = @FullName, Phone = @Phone, Role = @Role, IsActive = @IsActive WHERE UserId = @UserId";
             var parameters = new[]
             {
                 new SqlParameter("@UserId", SqlDbType.Int) { Value = user.UserId },
                 new SqlParameter("@UserName", SqlDbType.NVarChar, 100) { Value = user.UserName ?? string.Empty },
                 new SqlParameter("@Email", SqlDbType.NVarChar, 255) { Value = user.Email ?? string.Empty },
-                new SqlParameter("@PasswordHash", SqlDbType.NVarChar, 255) { Value = user.PasswordHash ?? string.Empty },
                 new SqlParameter("@FullName", SqlDbType.NVarChar, 200) { Value = (object)user.FullName ?? DBNull.Value },
                 new SqlParameter("@Phone", SqlDbType.NVarChar, 20) { Value = (object)user.Phone ?? DBNull.Value },
                 new SqlParameter("@Role", SqlDbType.NVarChar, 20) { Value = user.Role ?? string.Empty },
@@ -241,6 +240,60 @@ namespace BeverageWebsite.DAL
             catch (Exception ex)
             {
                 throw new InvalidOperationException($"Failed to update user. Details: {ex.Message}", ex);
+            }
+        }
+
+        /// <summary>
+        /// Updates the stored password hash for an existing user.
+        /// </summary>
+        /// <param name="userId">The user identifier.</param>
+        /// <param name="passwordHash">The already-created password hash to store.</param>
+        /// <returns>The number of rows affected.</returns>
+        public int UpdatePasswordHash(int userId, string passwordHash)
+        {
+            if (userId <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(userId), "User identifier must be greater than zero.");
+            }
+
+            if (string.IsNullOrWhiteSpace(passwordHash))
+            {
+                throw new ArgumentException("Password hash is required.", nameof(passwordHash));
+            }
+
+            if (passwordHash.Length > 255)
+            {
+                throw new ArgumentOutOfRangeException(nameof(passwordHash), "Password hash must not exceed 255 characters.");
+            }
+
+            const string sql = @"UPDATE dbo.[User]
+                                 SET PasswordHash = @PasswordHash
+                                 WHERE UserId = @UserId";
+            var parameters = new[]
+            {
+                new SqlParameter("@UserId", SqlDbType.Int) { Value = userId },
+                new SqlParameter("@PasswordHash", SqlDbType.NVarChar, 255) { Value = passwordHash }
+            };
+
+            try
+            {
+                var affectedRows = _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
+
+                if (affectedRows == 0)
+                {
+                    throw new InvalidOperationException("The user does not exist.");
+                }
+
+                if (affectedRows != 1)
+                {
+                    throw new InvalidOperationException("The password hash could not be updated.");
+                }
+
+                return affectedRows;
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException("Failed to update the password hash.", ex);
             }
         }
 
