@@ -28,7 +28,7 @@ namespace BeverageWebsite.DAL
         public List<User> GetAll()
         {
             var users = new List<User>();
-            const string sql = @"SELECT UserId, UserName, Email, PasswordHash, FullName, Phone, Role, IsActive, CreatedAt FROM dbo.[User] ORDER BY UserName";
+            const string sql = @"SELECT UserId, UserName, Email, FullName, Phone, Role, IsActive, CreatedAt FROM dbo.[User] ORDER BY UserName";
 
             try
             {
@@ -42,7 +42,7 @@ namespace BeverageWebsite.DAL
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Failed to retrieve users. Details: {ex.Message}", ex);
+                throw new InvalidOperationException("Failed to retrieve users.", ex);
             }
 
             return users;
@@ -55,7 +55,12 @@ namespace BeverageWebsite.DAL
         /// <returns>A <see cref="User"/> object if found; otherwise, null.</returns>
         public User GetById(int userId)
         {
-            const string sql = @"SELECT UserId, UserName, Email, PasswordHash, FullName, Phone, Role, IsActive, CreatedAt FROM dbo.[User] WHERE UserId = @UserId";
+            if (userId <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(userId), "User identifier must be greater than zero.");
+            }
+
+            const string sql = @"SELECT UserId, UserName, Email, FullName, Phone, Role, IsActive, CreatedAt FROM dbo.[User] WHERE UserId = @UserId";
             var parameters = new[]
             {
                 new SqlParameter("@UserId", SqlDbType.Int) { Value = userId }
@@ -73,7 +78,7 @@ namespace BeverageWebsite.DAL
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Failed to retrieve user by id {userId}. Details: {ex.Message}", ex);
+                throw new InvalidOperationException("Failed to retrieve user.", ex);
             }
 
             return null;
@@ -86,10 +91,11 @@ namespace BeverageWebsite.DAL
         /// <returns>A <see cref="User"/> object if found; otherwise, null.</returns>
         public User GetByEmail(string email)
         {
-            const string sql = @"SELECT UserId, UserName, Email, PasswordHash, FullName, Phone, Role, IsActive, CreatedAt FROM dbo.[User] WHERE Email = @Email";
+            var normalizedEmail = ValidateAndNormalizeEmail(email);
+            const string sql = @"SELECT UserId, UserName, Email, FullName, Phone, Role, IsActive, CreatedAt FROM dbo.[User] WHERE Email = @Email";
             var parameters = new[]
             {
-                new SqlParameter("@Email", SqlDbType.NVarChar, 255) { Value = email ?? string.Empty }
+                new SqlParameter("@Email", SqlDbType.NVarChar, 255) { Value = normalizedEmail }
             };
 
             try
@@ -104,7 +110,42 @@ namespace BeverageWebsite.DAL
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Failed to retrieve user by email '{email}'. Details: {ex.Message}", ex);
+                throw new InvalidOperationException("Failed to retrieve user by email.", ex);
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Retrieves a user by exact email address together with credential data required for authentication.
+        /// </summary>
+        /// <param name="email">The email address used for the authentication lookup.</param>
+        /// <returns>
+        /// A <see cref="User"/> object including its password hash when found; otherwise, null.
+        /// The returned credential data is intended only for authentication verification.
+        /// </returns>
+        public User GetByEmailForAuthentication(string email)
+        {
+            var normalizedEmail = ValidateAndNormalizeEmail(email);
+            const string sql = @"SELECT UserId, UserName, Email, PasswordHash, FullName, Phone, Role, IsActive, CreatedAt FROM dbo.[User] WHERE Email = @Email";
+            var parameters = new[]
+            {
+                new SqlParameter("@Email", SqlDbType.NVarChar, 255) { Value = normalizedEmail }
+            };
+
+            try
+            {
+                using (var reader = _dataProvider.ExecuteReader(sql, CommandType.Text, parameters))
+                {
+                    if (reader.Read())
+                    {
+                        return MapUserForAuthentication(reader);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException("Failed to retrieve authentication credentials.", ex);
             }
 
             return null;
@@ -226,20 +267,53 @@ namespace BeverageWebsite.DAL
             }
         }
 
+        private static string ValidateAndNormalizeEmail(string email)
+        {
+            if (string.IsNullOrWhiteSpace(email))
+            {
+                throw new ArgumentException("Email is required.", nameof(email));
+            }
+
+            var normalizedEmail = email.Trim();
+
+            if (normalizedEmail.Length > 255)
+            {
+                throw new ArgumentOutOfRangeException(nameof(email), "Email must not exceed 255 characters.");
+            }
+
+            return normalizedEmail;
+        }
+
         private static User MapUser(SqlDataReader reader)
         {
+            var userIdOrdinal = reader.GetOrdinal("UserId");
+            var userNameOrdinal = reader.GetOrdinal("UserName");
+            var emailOrdinal = reader.GetOrdinal("Email");
+            var fullNameOrdinal = reader.GetOrdinal("FullName");
+            var phoneOrdinal = reader.GetOrdinal("Phone");
+            var roleOrdinal = reader.GetOrdinal("Role");
+            var isActiveOrdinal = reader.GetOrdinal("IsActive");
+            var createdAtOrdinal = reader.GetOrdinal("CreatedAt");
+
             return new User
             {
-                UserId = reader.IsDBNull(reader.GetOrdinal("UserId")) ? 0 : reader.GetInt32(reader.GetOrdinal("UserId")),
-                UserName = reader.IsDBNull(reader.GetOrdinal("UserName")) ? null : reader.GetString(reader.GetOrdinal("UserName")),
-                Email = reader.IsDBNull(reader.GetOrdinal("Email")) ? null : reader.GetString(reader.GetOrdinal("Email")),
-                PasswordHash = reader.IsDBNull(reader.GetOrdinal("PasswordHash")) ? null : reader.GetString(reader.GetOrdinal("PasswordHash")),
-                FullName = reader.IsDBNull(reader.GetOrdinal("FullName")) ? null : reader.GetString(reader.GetOrdinal("FullName")),
-                Phone = reader.IsDBNull(reader.GetOrdinal("Phone")) ? null : reader.GetString(reader.GetOrdinal("Phone")),
-                Role = reader.IsDBNull(reader.GetOrdinal("Role")) ? null : reader.GetString(reader.GetOrdinal("Role")),
-                IsActive = reader.IsDBNull(reader.GetOrdinal("IsActive")) ? false : reader.GetBoolean(reader.GetOrdinal("IsActive")),
-                CreatedAt = reader.IsDBNull(reader.GetOrdinal("CreatedAt")) ? DateTime.MinValue : reader.GetDateTime(reader.GetOrdinal("CreatedAt"))
+                UserId = reader.IsDBNull(userIdOrdinal) ? 0 : reader.GetInt32(userIdOrdinal),
+                UserName = reader.IsDBNull(userNameOrdinal) ? null : reader.GetString(userNameOrdinal),
+                Email = reader.IsDBNull(emailOrdinal) ? null : reader.GetString(emailOrdinal),
+                FullName = reader.IsDBNull(fullNameOrdinal) ? null : reader.GetString(fullNameOrdinal),
+                Phone = reader.IsDBNull(phoneOrdinal) ? null : reader.GetString(phoneOrdinal),
+                Role = reader.IsDBNull(roleOrdinal) ? null : reader.GetString(roleOrdinal),
+                IsActive = reader.IsDBNull(isActiveOrdinal) ? false : reader.GetBoolean(isActiveOrdinal),
+                CreatedAt = reader.IsDBNull(createdAtOrdinal) ? DateTime.MinValue : reader.GetDateTime(createdAtOrdinal)
             };
+        }
+
+        private static User MapUserForAuthentication(SqlDataReader reader)
+        {
+            var passwordHashOrdinal = reader.GetOrdinal("PasswordHash");
+            var user = MapUser(reader);
+            user.PasswordHash = reader.IsDBNull(passwordHashOrdinal) ? null : reader.GetString(passwordHashOrdinal);
+            return user;
         }
     }
 }
