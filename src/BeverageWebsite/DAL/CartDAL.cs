@@ -115,12 +115,18 @@ namespace BeverageWebsite.DAL
         /// <summary>
         /// Adds a product to the cart with the specified quantity.
         /// </summary>
+        /// <param name="userId">The user identifier.</param>
         /// <param name="cartId">The cart identifier.</param>
         /// <param name="productId">The product identifier.</param>
         /// <param name="quantity">The quantity to add.</param>
         /// <returns>The number of rows affected.</returns>
-        public int AddItem(int cartId, int productId, int quantity)
+        public int AddItem(int userId, int cartId, int productId, int quantity)
         {
+            if (userId <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(userId), "User identifier must be greater than zero.");
+            }
+
             if (cartId <= 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(cartId), "Cart identifier must be greater than zero.");
@@ -140,6 +146,8 @@ namespace BeverageWebsite.DAL
             {
                 return _dataProvider.ExecuteInTransaction((connection, transaction) =>
                 {
+                    ValidateCartOwnership(connection, transaction, cartId, userId);
+
                     const string productSql = @"SELECT P.Price
                                                 FROM dbo.Product P WITH (UPDLOCK, HOLDLOCK)
                                                 WHERE P.ProductId = @ProductId
@@ -159,21 +167,6 @@ namespace BeverageWebsite.DAL
                         }
 
                         unitPrice = Convert.ToDecimal(productPrice);
-                    }
-
-                    const string cartSql = @"SELECT C.CartId
-                                             FROM dbo.Cart C WITH (UPDLOCK, HOLDLOCK)
-                                             WHERE C.CartId = @CartId";
-
-                    using (var cartCommand = new SqlCommand(cartSql, connection, transaction))
-                    {
-                        cartCommand.Parameters.Add(
-                            new SqlParameter("@CartId", SqlDbType.Int) { Value = cartId });
-
-                        if (cartCommand.ExecuteScalar() == null)
-                        {
-                            throw new InvalidOperationException("The cart does not exist.");
-                        }
                     }
 
                     const string cartItemSql = @"SELECT CI.CartItemId
@@ -267,11 +260,23 @@ namespace BeverageWebsite.DAL
         /// <summary>
         /// Updates the quantity of a cart item.
         /// </summary>
+        /// <param name="userId">The user identifier.</param>
+        /// <param name="cartId">The cart identifier.</param>
         /// <param name="cartItemId">The cart item identifier.</param>
         /// <param name="quantity">The new quantity.</param>
         /// <returns>The number of rows affected.</returns>
-        public int UpdateQuantity(int cartItemId, int quantity)
+        public int UpdateQuantity(int userId, int cartId, int cartItemId, int quantity)
         {
+            if (userId <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(userId), "User identifier must be greater than zero.");
+            }
+
+            if (cartId <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(cartId), "Cart identifier must be greater than zero.");
+            }
+
             if (cartItemId <= 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(cartItemId), "Cart item identifier must be greater than zero.");
@@ -282,66 +287,150 @@ namespace BeverageWebsite.DAL
                 throw new ArgumentOutOfRangeException(nameof(quantity), "Quantity must be greater than zero.");
             }
 
-            const string sql = @"UPDATE dbo.CartItem SET Quantity = @Quantity WHERE CartItemId = @CartItemId";
-            var parameters = new[]
-            {
-                new SqlParameter("@CartItemId", SqlDbType.Int) { Value = cartItemId },
-                new SqlParameter("@Quantity", SqlDbType.Int) { Value = quantity }
-            };
-
             try
             {
-                return _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
+                return _dataProvider.ExecuteInTransaction((connection, transaction) =>
+                {
+                    ValidateCartOwnership(connection, transaction, cartId, userId);
+
+                    const string sql = @"UPDATE dbo.CartItem
+                                         SET Quantity = @Quantity
+                                         WHERE CartItemId = @CartItemId
+                                           AND CartId = @CartId";
+
+                    using (var command = new SqlCommand(sql, connection, transaction))
+                    {
+                        command.Parameters.Add(
+                            new SqlParameter("@CartItemId", SqlDbType.Int) { Value = cartItemId });
+                        command.Parameters.Add(
+                            new SqlParameter("@CartId", SqlDbType.Int) { Value = cartId });
+                        command.Parameters.Add(
+                            new SqlParameter("@Quantity", SqlDbType.Int) { Value = quantity });
+
+                        var affectedRows = command.ExecuteNonQuery();
+
+                        if (affectedRows == 0)
+                        {
+                            throw new InvalidOperationException("The cart item does not exist in the specified cart.");
+                        }
+
+                        if (affectedRows != 1)
+                        {
+                            throw new InvalidOperationException("The cart item could not be updated.");
+                        }
+
+                        return affectedRows;
+                    }
+                });
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Failed to update quantity for cart item {cartItemId}. Details: {ex.Message}", ex);
+                throw new InvalidOperationException("Failed to update the cart item quantity.", ex);
             }
         }
 
         /// <summary>
         /// Removes a cart item from the cart.
         /// </summary>
+        /// <param name="userId">The user identifier.</param>
+        /// <param name="cartId">The cart identifier.</param>
         /// <param name="cartItemId">The cart item identifier.</param>
         /// <returns>The number of rows affected.</returns>
-        public int RemoveItem(int cartItemId)
+        public int RemoveItem(int userId, int cartId, int cartItemId)
         {
-            const string sql = @"DELETE FROM dbo.CartItem WHERE CartItemId = @CartItemId";
-            var parameters = new[]
+            if (userId <= 0)
             {
-                new SqlParameter("@CartItemId", SqlDbType.Int) { Value = cartItemId }
-            };
+                throw new ArgumentOutOfRangeException(nameof(userId), "User identifier must be greater than zero.");
+            }
+
+            if (cartId <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(cartId), "Cart identifier must be greater than zero.");
+            }
+
+            if (cartItemId <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(cartItemId), "Cart item identifier must be greater than zero.");
+            }
 
             try
             {
-                return _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
+                return _dataProvider.ExecuteInTransaction((connection, transaction) =>
+                {
+                    ValidateCartOwnership(connection, transaction, cartId, userId);
+
+                    const string sql = @"DELETE FROM dbo.CartItem
+                                         WHERE CartItemId = @CartItemId
+                                           AND CartId = @CartId";
+
+                    using (var command = new SqlCommand(sql, connection, transaction))
+                    {
+                        command.Parameters.Add(
+                            new SqlParameter("@CartItemId", SqlDbType.Int) { Value = cartItemId });
+                        command.Parameters.Add(
+                            new SqlParameter("@CartId", SqlDbType.Int) { Value = cartId });
+
+                        var affectedRows = command.ExecuteNonQuery();
+
+                        if (affectedRows == 0)
+                        {
+                            throw new InvalidOperationException("The cart item does not exist in the specified cart.");
+                        }
+
+                        if (affectedRows != 1)
+                        {
+                            throw new InvalidOperationException("The cart item could not be removed.");
+                        }
+
+                        return affectedRows;
+                    }
+                });
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Failed to remove cart item {cartItemId}. Details: {ex.Message}", ex);
+                throw new InvalidOperationException("Failed to remove the cart item.", ex);
             }
         }
 
         /// <summary>
         /// Clears all items from the specified cart.
         /// </summary>
+        /// <param name="userId">The user identifier.</param>
         /// <param name="cartId">The cart identifier.</param>
         /// <returns>The number of rows affected.</returns>
-        public int ClearCart(int cartId)
+        public int ClearCart(int userId, int cartId)
         {
-            const string sql = @"DELETE FROM dbo.CartItem WHERE CartId = @CartId";
-            var parameters = new[]
+            if (userId <= 0)
             {
-                new SqlParameter("@CartId", SqlDbType.Int) { Value = cartId }
-            };
+                throw new ArgumentOutOfRangeException(nameof(userId), "User identifier must be greater than zero.");
+            }
+
+            if (cartId <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(cartId), "Cart identifier must be greater than zero.");
+            }
 
             try
             {
-                return _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
+                return _dataProvider.ExecuteInTransaction((connection, transaction) =>
+                {
+                    ValidateCartOwnership(connection, transaction, cartId, userId);
+
+                    const string sql = @"DELETE FROM dbo.CartItem
+                                         WHERE CartId = @CartId";
+
+                    using (var command = new SqlCommand(sql, connection, transaction))
+                    {
+                        command.Parameters.Add(
+                            new SqlParameter("@CartId", SqlDbType.Int) { Value = cartId });
+
+                        return command.ExecuteNonQuery();
+                    }
+                });
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Failed to clear cart {cartId}. Details: {ex.Message}", ex);
+                throw new InvalidOperationException("Failed to clear the cart.", ex);
             }
         }
 
@@ -390,6 +479,31 @@ namespace BeverageWebsite.DAL
             catch (Exception ex)
             {
                 throw new InvalidOperationException($"Failed to calculate total items for cart {cartId}. Details: {ex.Message}", ex);
+            }
+        }
+
+        private static void ValidateCartOwnership(
+            SqlConnection connection,
+            SqlTransaction transaction,
+            int cartId,
+            int userId)
+        {
+            const string sql = @"SELECT C.CartId
+                                 FROM dbo.Cart C WITH (UPDLOCK, HOLDLOCK)
+                                 WHERE C.CartId = @CartId
+                                   AND C.UserId = @UserId";
+
+            using (var command = new SqlCommand(sql, connection, transaction))
+            {
+                command.Parameters.Add(
+                    new SqlParameter("@CartId", SqlDbType.Int) { Value = cartId });
+                command.Parameters.Add(
+                    new SqlParameter("@UserId", SqlDbType.Int) { Value = userId });
+
+                if (command.ExecuteScalar() == null)
+                {
+                    throw new InvalidOperationException("The cart does not exist or is not available to the specified user.");
+                }
             }
         }
 
