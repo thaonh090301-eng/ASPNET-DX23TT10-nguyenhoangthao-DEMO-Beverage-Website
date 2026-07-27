@@ -223,6 +223,21 @@ BEGIN
 END;
 GO
 
+IF OBJECT_ID(N'dbo.CartItem', N'U') IS NOT NULL
+   AND NOT EXISTS
+   (
+       SELECT 1
+       FROM sys.key_constraints
+       WHERE name = N'UQ_CartItem_Cart_Product'
+         AND parent_object_id = OBJECT_ID(N'dbo.CartItem')
+         AND type = N'UQ'
+   )
+BEGIN
+    ALTER TABLE dbo.CartItem
+    ADD CONSTRAINT UQ_CartItem_Cart_Product UNIQUE (CartId, ProductId);
+END;
+GO
+
 IF OBJECT_ID(N'dbo.[Order]', N'U') IS NULL
 BEGIN
     CREATE TABLE dbo.[Order]

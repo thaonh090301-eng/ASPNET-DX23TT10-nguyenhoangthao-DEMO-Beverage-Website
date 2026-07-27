@@ -136,47 +136,131 @@ namespace BeverageWebsite.DAL
                 throw new ArgumentOutOfRangeException(nameof(quantity), "Quantity must be greater than zero.");
             }
 
-            const string sql = @"SELECT @UnitPrice = Price
-                                 FROM dbo.Product
-                                 WHERE ProductId = @ProductId AND IsActive = 1;
-
-                                 IF @UnitPrice IS NULL
-                                 BEGIN
-                                     RAISERROR ('Product does not exist or is inactive.', 16, 1);
-                                     RETURN;
-                                 END
-
-                                 IF EXISTS (SELECT 1 FROM dbo.CartItem WHERE CartId = @CartId AND ProductId = @ProductId)
-                                 BEGIN
-                                     UPDATE dbo.CartItem
-                                     SET Quantity = Quantity + @Quantity,
-                                         UnitPrice = @UnitPrice
-                                     WHERE CartId = @CartId AND ProductId = @ProductId
-                                 END
-                                 ELSE
-                                 BEGIN
-                                     INSERT INTO dbo.CartItem (CartId, ProductId, Quantity, UnitPrice) VALUES (@CartId, @ProductId, @Quantity, @UnitPrice)
-                                 END";
-            var parameters = new[]
-            {
-                new SqlParameter("@CartId", SqlDbType.Int) { Value = cartId },
-                new SqlParameter("@ProductId", SqlDbType.Int) { Value = productId },
-                new SqlParameter("@Quantity", SqlDbType.Int) { Value = quantity },
-                new SqlParameter("@UnitPrice", SqlDbType.Decimal)
-                {
-                    Precision = 12,
-                    Scale = 2,
-                    Direction = ParameterDirection.Output
-                }
-            };
-
             try
             {
-                return _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
+                return _dataProvider.ExecuteInTransaction((connection, transaction) =>
+                {
+                    const string productSql = @"SELECT P.Price
+                                                FROM dbo.Product P WITH (UPDLOCK, HOLDLOCK)
+                                                WHERE P.ProductId = @ProductId
+                                                  AND P.IsActive = 1";
+                    decimal unitPrice;
+
+                    using (var productCommand = new SqlCommand(productSql, connection, transaction))
+                    {
+                        productCommand.Parameters.Add(
+                            new SqlParameter("@ProductId", SqlDbType.Int) { Value = productId });
+
+                        var productPrice = productCommand.ExecuteScalar();
+
+                        if (productPrice == null || productPrice == DBNull.Value)
+                        {
+                            throw new InvalidOperationException("The product does not exist or is inactive.");
+                        }
+
+                        unitPrice = Convert.ToDecimal(productPrice);
+                    }
+
+                    const string cartSql = @"SELECT C.CartId
+                                             FROM dbo.Cart C WITH (UPDLOCK, HOLDLOCK)
+                                             WHERE C.CartId = @CartId";
+
+                    using (var cartCommand = new SqlCommand(cartSql, connection, transaction))
+                    {
+                        cartCommand.Parameters.Add(
+                            new SqlParameter("@CartId", SqlDbType.Int) { Value = cartId });
+
+                        if (cartCommand.ExecuteScalar() == null)
+                        {
+                            throw new InvalidOperationException("The cart does not exist.");
+                        }
+                    }
+
+                    const string cartItemSql = @"SELECT CI.CartItemId
+                                                 FROM dbo.CartItem CI WITH (UPDLOCK, HOLDLOCK)
+                                                 WHERE CI.CartId = @CartId
+                                                   AND CI.ProductId = @ProductId";
+                    object cartItemId;
+
+                    using (var cartItemCommand = new SqlCommand(cartItemSql, connection, transaction))
+                    {
+                        cartItemCommand.Parameters.Add(
+                            new SqlParameter("@CartId", SqlDbType.Int) { Value = cartId });
+                        cartItemCommand.Parameters.Add(
+                            new SqlParameter("@ProductId", SqlDbType.Int) { Value = productId });
+                        cartItemId = cartItemCommand.ExecuteScalar();
+                    }
+
+                    if (cartItemId != null && cartItemId != DBNull.Value)
+                    {
+                        const string updateSql = @"UPDATE dbo.CartItem
+                                                   SET Quantity = Quantity + @Quantity,
+                                                       UnitPrice = @UnitPrice
+                                                   WHERE CartId = @CartId
+                                                     AND ProductId = @ProductId";
+
+                        using (var updateCommand = new SqlCommand(updateSql, connection, transaction))
+                        {
+                            updateCommand.Parameters.Add(
+                                new SqlParameter("@CartId", SqlDbType.Int) { Value = cartId });
+                            updateCommand.Parameters.Add(
+                                new SqlParameter("@ProductId", SqlDbType.Int) { Value = productId });
+                            updateCommand.Parameters.Add(
+                                new SqlParameter("@Quantity", SqlDbType.Int) { Value = quantity });
+                            updateCommand.Parameters.Add(
+                                new SqlParameter("@UnitPrice", SqlDbType.Decimal)
+                                {
+                                    Precision = 12,
+                                    Scale = 2,
+                                    Value = unitPrice
+                                });
+
+                            var affectedRows = updateCommand.ExecuteNonQuery();
+
+                            if (affectedRows != 1)
+                            {
+                                throw new InvalidOperationException("The cart item could not be updated.");
+                            }
+
+                            return affectedRows;
+                        }
+                    }
+
+                    const string insertSql = @"INSERT INTO dbo.CartItem
+                                               (CartId, ProductId, Quantity, UnitPrice)
+                                               VALUES
+                                               (@CartId, @ProductId, @Quantity, @UnitPrice)";
+
+                    using (var insertCommand = new SqlCommand(insertSql, connection, transaction))
+                    {
+                        insertCommand.Parameters.Add(
+                            new SqlParameter("@CartId", SqlDbType.Int) { Value = cartId });
+                        insertCommand.Parameters.Add(
+                            new SqlParameter("@ProductId", SqlDbType.Int) { Value = productId });
+                        insertCommand.Parameters.Add(
+                            new SqlParameter("@Quantity", SqlDbType.Int) { Value = quantity });
+                        insertCommand.Parameters.Add(
+                            new SqlParameter("@UnitPrice", SqlDbType.Decimal)
+                            {
+                                Precision = 12,
+                                Scale = 2,
+                                Value = unitPrice
+                            });
+
+                        var affectedRows = insertCommand.ExecuteNonQuery();
+
+                        if (affectedRows != 1)
+                        {
+                            throw new InvalidOperationException("The cart item could not be inserted.");
+                        }
+
+                        return affectedRows;
+                    }
+                });
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Failed to add item to cart {cartId}. Details: {ex.Message}", ex);
+                throw new InvalidOperationException("Failed to add item to cart.", ex);
             }
         }
 
