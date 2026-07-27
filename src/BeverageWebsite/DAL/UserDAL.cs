@@ -146,7 +146,7 @@ namespace BeverageWebsite.DAL
                 throw new ArgumentNullException(nameof(user));
             }
 
-            const string sql = @"INSERT INTO dbo.[User] (UserName, Email, PasswordHash, FullName, Phone, Role, IsActive, CreatedAt) VALUES (@UserName, @Email, @PasswordHash, @FullName, @Phone, @Role, @IsActive, @CreatedAt)";
+            const string sql = @"INSERT INTO dbo.[User] (UserName, Email, PasswordHash, FullName, Phone, Role, IsActive) VALUES (@UserName, @Email, @PasswordHash, @FullName, @Phone, @Role, @IsActive)";
             var parameters = new[]
             {
                 new SqlParameter("@UserName", SqlDbType.NVarChar, 100) { Value = user.UserName ?? string.Empty },
@@ -155,8 +155,7 @@ namespace BeverageWebsite.DAL
                 new SqlParameter("@FullName", SqlDbType.NVarChar, 200) { Value = (object)user.FullName ?? DBNull.Value },
                 new SqlParameter("@Phone", SqlDbType.NVarChar, 20) { Value = (object)user.Phone ?? DBNull.Value },
                 new SqlParameter("@Role", SqlDbType.NVarChar, 20) { Value = user.Role ?? string.Empty },
-                new SqlParameter("@IsActive", SqlDbType.Bit) { Value = user.IsActive },
-                new SqlParameter("@CreatedAt", SqlDbType.DateTime2) { Value = user.CreatedAt }
+                new SqlParameter("@IsActive", SqlDbType.Bit) { Value = user.IsActive }
             };
 
             try
@@ -181,7 +180,7 @@ namespace BeverageWebsite.DAL
                 throw new ArgumentNullException(nameof(user));
             }
 
-            const string sql = @"UPDATE dbo.[User] SET UserName = @UserName, Email = @Email, PasswordHash = @PasswordHash, FullName = @FullName, Phone = @Phone, Role = @Role, IsActive = @IsActive, CreatedAt = @CreatedAt WHERE UserId = @UserId";
+            const string sql = @"UPDATE dbo.[User] SET UserName = @UserName, Email = @Email, PasswordHash = @PasswordHash, FullName = @FullName, Phone = @Phone, Role = @Role, IsActive = @IsActive WHERE UserId = @UserId";
             var parameters = new[]
             {
                 new SqlParameter("@UserId", SqlDbType.Int) { Value = user.UserId },
@@ -191,8 +190,7 @@ namespace BeverageWebsite.DAL
                 new SqlParameter("@FullName", SqlDbType.NVarChar, 200) { Value = (object)user.FullName ?? DBNull.Value },
                 new SqlParameter("@Phone", SqlDbType.NVarChar, 20) { Value = (object)user.Phone ?? DBNull.Value },
                 new SqlParameter("@Role", SqlDbType.NVarChar, 20) { Value = user.Role ?? string.Empty },
-                new SqlParameter("@IsActive", SqlDbType.Bit) { Value = user.IsActive },
-                new SqlParameter("@CreatedAt", SqlDbType.DateTime2) { Value = user.CreatedAt }
+                new SqlParameter("@IsActive", SqlDbType.Bit) { Value = user.IsActive }
             };
 
             try
