@@ -11,6 +11,10 @@ namespace BeverageWebsite.DAL
     /// </summary>
     public class ProductDAL
     {
+        private const int ProductNameMaxLength = 200;
+        private const int DescriptionMaxLength = 1000;
+        private const int ImageUrlMaxLength = 500;
+
         private readonly DataProvider _dataProvider;
 
         /// <summary>
@@ -55,6 +59,8 @@ namespace BeverageWebsite.DAL
         /// <returns>A <see cref="Product"/> object if found; otherwise, null.</returns>
         public Product GetById(int id)
         {
+            ValidateIdentifier(id, nameof(id));
+
             const string sql = @"SELECT ProductId, CategoryId, ProductName, Description, Price, ImageUrl, IsActive, CreatedAt FROM dbo.Product WHERE ProductId = @ProductId";
             var parameters = new[]
             {
@@ -73,7 +79,7 @@ namespace BeverageWebsite.DAL
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Failed to retrieve product by id {id}. Details: {ex.Message}", ex);
+                throw new InvalidOperationException("Failed to retrieve the product.", ex);
             }
 
             return null;
@@ -86,6 +92,8 @@ namespace BeverageWebsite.DAL
         /// <returns>A list of <see cref="Product"/> objects.</returns>
         public List<Product> GetByCategory(int categoryId)
         {
+            ValidateIdentifier(categoryId, nameof(categoryId));
+
             var products = new List<Product>();
             const string sql = @"SELECT ProductId, CategoryId, ProductName, Description, Price, ImageUrl, IsActive, CreatedAt FROM dbo.Product WHERE CategoryId = @CategoryId ORDER BY ProductName";
             var parameters = new[]
@@ -105,7 +113,7 @@ namespace BeverageWebsite.DAL
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Failed to retrieve products by category {categoryId}. Details: {ex.Message}", ex);
+                throw new InvalidOperationException("Failed to retrieve products for the category.", ex);
             }
 
             return products;
@@ -155,30 +163,54 @@ namespace BeverageWebsite.DAL
                 throw new ArgumentNullException(nameof(product));
             }
 
+            ValidateIdentifier(product.CategoryId, nameof(product.CategoryId));
+
             if (product.Price < 0m)
             {
                 throw new ArgumentOutOfRangeException(nameof(product.Price), "Product price must be greater than or equal to zero.");
             }
 
+            var productName = NormalizeRequiredString(
+                product.ProductName,
+                ProductNameMaxLength,
+                nameof(product.ProductName));
+            var description = NormalizeOptionalString(
+                product.Description,
+                DescriptionMaxLength,
+                nameof(product.Description));
+            var imageUrl = NormalizeOptionalString(
+                product.ImageUrl,
+                ImageUrlMaxLength,
+                nameof(product.ImageUrl));
+
             const string sql = @"INSERT INTO dbo.Product (CategoryId, ProductName, Description, Price, ImageUrl, IsActive) VALUES (@CategoryId, @ProductName, @Description, @Price, @ImageUrl, @IsActive)";
             var parameters = new[]
             {
                 new SqlParameter("@CategoryId", SqlDbType.Int) { Value = product.CategoryId },
-                new SqlParameter("@ProductName", SqlDbType.NVarChar, 200) { Value = product.ProductName ?? string.Empty },
-                new SqlParameter("@Description", SqlDbType.NVarChar, 1000) { Value = (object)product.Description ?? DBNull.Value },
+                new SqlParameter("@ProductName", SqlDbType.NVarChar, ProductNameMaxLength) { Value = productName },
+                new SqlParameter("@Description", SqlDbType.NVarChar, DescriptionMaxLength) { Value = (object)description ?? DBNull.Value },
                 CreatePriceParameter(product.Price),
-                new SqlParameter("@ImageUrl", SqlDbType.NVarChar, 500) { Value = (object)product.ImageUrl ?? DBNull.Value },
+                new SqlParameter("@ImageUrl", SqlDbType.NVarChar, ImageUrlMaxLength) { Value = (object)imageUrl ?? DBNull.Value },
                 new SqlParameter("@IsActive", SqlDbType.Bit) { Value = product.IsActive }
             };
 
+            int affectedRows;
+
             try
             {
-                return _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
+                affectedRows = _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Failed to insert product. Details: {ex.Message}", ex);
+                throw new InvalidOperationException("Failed to insert the product.", ex);
             }
+
+            if (affectedRows != 1)
+            {
+                throw new InvalidOperationException("The product insert did not affect exactly one record.");
+            }
+
+            return affectedRows;
         }
 
         /// <summary>
@@ -193,31 +225,61 @@ namespace BeverageWebsite.DAL
                 throw new ArgumentNullException(nameof(product));
             }
 
+            ValidateIdentifier(product.ProductId, nameof(product.ProductId));
+            ValidateIdentifier(product.CategoryId, nameof(product.CategoryId));
+
             if (product.Price < 0m)
             {
                 throw new ArgumentOutOfRangeException(nameof(product.Price), "Product price must be greater than or equal to zero.");
             }
+
+            var productName = NormalizeRequiredString(
+                product.ProductName,
+                ProductNameMaxLength,
+                nameof(product.ProductName));
+            var description = NormalizeOptionalString(
+                product.Description,
+                DescriptionMaxLength,
+                nameof(product.Description));
+            var imageUrl = NormalizeOptionalString(
+                product.ImageUrl,
+                ImageUrlMaxLength,
+                nameof(product.ImageUrl));
 
             const string sql = @"UPDATE dbo.Product SET CategoryId = @CategoryId, ProductName = @ProductName, Description = @Description, Price = @Price, ImageUrl = @ImageUrl, IsActive = @IsActive WHERE ProductId = @ProductId";
             var parameters = new[]
             {
                 new SqlParameter("@ProductId", SqlDbType.Int) { Value = product.ProductId },
                 new SqlParameter("@CategoryId", SqlDbType.Int) { Value = product.CategoryId },
-                new SqlParameter("@ProductName", SqlDbType.NVarChar, 200) { Value = product.ProductName ?? string.Empty },
-                new SqlParameter("@Description", SqlDbType.NVarChar, 1000) { Value = (object)product.Description ?? DBNull.Value },
+                new SqlParameter("@ProductName", SqlDbType.NVarChar, ProductNameMaxLength) { Value = productName },
+                new SqlParameter("@Description", SqlDbType.NVarChar, DescriptionMaxLength) { Value = (object)description ?? DBNull.Value },
                 CreatePriceParameter(product.Price),
-                new SqlParameter("@ImageUrl", SqlDbType.NVarChar, 500) { Value = (object)product.ImageUrl ?? DBNull.Value },
+                new SqlParameter("@ImageUrl", SqlDbType.NVarChar, ImageUrlMaxLength) { Value = (object)imageUrl ?? DBNull.Value },
                 new SqlParameter("@IsActive", SqlDbType.Bit) { Value = product.IsActive }
             };
 
+            int affectedRows;
+
             try
             {
-                return _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
+                affectedRows = _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Failed to update product. Details: {ex.Message}", ex);
+                throw new InvalidOperationException("Failed to update the product.", ex);
             }
+
+            if (affectedRows == 0)
+            {
+                throw new InvalidOperationException("The product was not found.");
+            }
+
+            if (affectedRows != 1)
+            {
+                throw new InvalidOperationException("The product update did not affect exactly one record.");
+            }
+
+            return affectedRows;
         }
 
         /// <summary>
@@ -227,6 +289,8 @@ namespace BeverageWebsite.DAL
         /// <returns>The number of rows affected.</returns>
         public int Delete(int id)
         {
+            ValidateIdentifier(id, nameof(id));
+
             const string sql = @"DELETE FROM dbo.Product WHERE ProductId = @ProductId";
             var parameters = new[]
             {
@@ -239,8 +303,50 @@ namespace BeverageWebsite.DAL
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Failed to delete product {id}. Details: {ex.Message}", ex);
+                throw new InvalidOperationException("Failed to delete the product.", ex);
             }
+        }
+
+        private static void ValidateIdentifier(int value, string parameterName)
+        {
+            if (value <= 0)
+            {
+                throw new ArgumentOutOfRangeException(parameterName, "The identifier must be greater than zero.");
+            }
+        }
+
+        private static string NormalizeRequiredString(string value, int maxLength, string parameterName)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                throw new ArgumentException("A required product value must be provided.", parameterName);
+            }
+
+            var normalizedValue = value.Trim();
+
+            if (normalizedValue.Length > maxLength)
+            {
+                throw new ArgumentException("A product value exceeds the allowed maximum length.", parameterName);
+            }
+
+            return normalizedValue;
+        }
+
+        private static string NormalizeOptionalString(string value, int maxLength, string parameterName)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return null;
+            }
+
+            var normalizedValue = value.Trim();
+
+            if (normalizedValue.Length > maxLength)
+            {
+                throw new ArgumentException("A product value exceeds the allowed maximum length.", parameterName);
+            }
+
+            return normalizedValue;
         }
 
         private static SqlParameter CreatePriceParameter(decimal value)
@@ -255,16 +361,25 @@ namespace BeverageWebsite.DAL
 
         private static Product MapProduct(SqlDataReader reader)
         {
+            var productIdOrdinal = reader.GetOrdinal("ProductId");
+            var categoryIdOrdinal = reader.GetOrdinal("CategoryId");
+            var productNameOrdinal = reader.GetOrdinal("ProductName");
+            var descriptionOrdinal = reader.GetOrdinal("Description");
+            var priceOrdinal = reader.GetOrdinal("Price");
+            var imageUrlOrdinal = reader.GetOrdinal("ImageUrl");
+            var isActiveOrdinal = reader.GetOrdinal("IsActive");
+            var createdAtOrdinal = reader.GetOrdinal("CreatedAt");
+
             return new Product
             {
-                ProductId = reader.IsDBNull(reader.GetOrdinal("ProductId")) ? 0 : reader.GetInt32(reader.GetOrdinal("ProductId")),
-                CategoryId = reader.IsDBNull(reader.GetOrdinal("CategoryId")) ? 0 : reader.GetInt32(reader.GetOrdinal("CategoryId")),
-                ProductName = reader.IsDBNull(reader.GetOrdinal("ProductName")) ? null : reader.GetString(reader.GetOrdinal("ProductName")),
-                Description = reader.IsDBNull(reader.GetOrdinal("Description")) ? null : reader.GetString(reader.GetOrdinal("Description")),
-                Price = reader.IsDBNull(reader.GetOrdinal("Price")) ? 0 : reader.GetDecimal(reader.GetOrdinal("Price")),
-                ImageUrl = reader.IsDBNull(reader.GetOrdinal("ImageUrl")) ? null : reader.GetString(reader.GetOrdinal("ImageUrl")),
-                IsActive = reader.IsDBNull(reader.GetOrdinal("IsActive")) ? false : reader.GetBoolean(reader.GetOrdinal("IsActive")),
-                CreatedAt = reader.IsDBNull(reader.GetOrdinal("CreatedAt")) ? DateTime.MinValue : reader.GetDateTime(reader.GetOrdinal("CreatedAt"))
+                ProductId = reader.IsDBNull(productIdOrdinal) ? 0 : reader.GetInt32(productIdOrdinal),
+                CategoryId = reader.IsDBNull(categoryIdOrdinal) ? 0 : reader.GetInt32(categoryIdOrdinal),
+                ProductName = reader.IsDBNull(productNameOrdinal) ? null : reader.GetString(productNameOrdinal),
+                Description = reader.IsDBNull(descriptionOrdinal) ? null : reader.GetString(descriptionOrdinal),
+                Price = reader.IsDBNull(priceOrdinal) ? 0 : reader.GetDecimal(priceOrdinal),
+                ImageUrl = reader.IsDBNull(imageUrlOrdinal) ? null : reader.GetString(imageUrlOrdinal),
+                IsActive = reader.IsDBNull(isActiveOrdinal) ? false : reader.GetBoolean(isActiveOrdinal),
+                CreatedAt = reader.IsDBNull(createdAtOrdinal) ? DateTime.MinValue : reader.GetDateTime(createdAtOrdinal)
             };
         }
     }
