@@ -224,6 +224,12 @@ namespace BeverageWebsite.DAL
                         throw new InvalidOperationException($"Cart {cartId} does not belong to the specified user.");
                     }
 
+                    ValidateAddressOwnership(
+                        connection,
+                        transaction,
+                        order.AddressId,
+                        order.UserId);
+
                     var cartItems = ReadCheckoutItems(connection, transaction, cartId);
                     if (cartItems.Count == 0)
                     {
@@ -312,6 +318,31 @@ namespace BeverageWebsite.DAL
 
                     var userIdOrdinal = reader.GetOrdinal("UserId");
                     return reader.IsDBNull(userIdOrdinal) ? (int?)null : reader.GetInt32(userIdOrdinal);
+                }
+            }
+        }
+
+        private static void ValidateAddressOwnership(
+            SqlConnection connection,
+            SqlTransaction transaction,
+            int addressId,
+            int userId)
+        {
+            const string sql = @"SELECT AddressId
+                                 FROM dbo.Address WITH (UPDLOCK, HOLDLOCK)
+                                 WHERE AddressId = @AddressId
+                                   AND UserId = @UserId";
+
+            using (var command = new SqlCommand(sql, connection, transaction))
+            {
+                command.Parameters.Add(new SqlParameter("@AddressId", SqlDbType.Int) { Value = addressId });
+                command.Parameters.Add(new SqlParameter("@UserId", SqlDbType.Int) { Value = userId });
+
+                var result = command.ExecuteScalar();
+                if (result == null || result == DBNull.Value)
+                {
+                    throw new InvalidOperationException(
+                        "The selected address does not exist or does not belong to the specified user.");
                 }
             }
         }
