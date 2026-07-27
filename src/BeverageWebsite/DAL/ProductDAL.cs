@@ -155,7 +155,7 @@ namespace BeverageWebsite.DAL
                 throw new ArgumentNullException(nameof(product));
             }
 
-            const string sql = @"INSERT INTO dbo.Product (CategoryId, ProductName, Description, Price, ImageUrl, IsActive, CreatedAt) VALUES (@CategoryId, @ProductName, @Description, @Price, @ImageUrl, @IsActive, @CreatedAt)";
+            const string sql = @"INSERT INTO dbo.Product (CategoryId, ProductName, Description, Price, ImageUrl, IsActive) VALUES (@CategoryId, @ProductName, @Description, @Price, @ImageUrl, @IsActive)";
             var parameters = new[]
             {
                 new SqlParameter("@CategoryId", SqlDbType.Int) { Value = product.CategoryId },
@@ -163,8 +163,7 @@ namespace BeverageWebsite.DAL
                 new SqlParameter("@Description", SqlDbType.NVarChar, 1000) { Value = (object)product.Description ?? DBNull.Value },
                 new SqlParameter("@Price", SqlDbType.Decimal) { Value = product.Price },
                 new SqlParameter("@ImageUrl", SqlDbType.NVarChar, 500) { Value = (object)product.ImageUrl ?? DBNull.Value },
-                new SqlParameter("@IsActive", SqlDbType.Bit) { Value = product.IsActive },
-                new SqlParameter("@CreatedAt", SqlDbType.DateTime2) { Value = product.CreatedAt }
+                new SqlParameter("@IsActive", SqlDbType.Bit) { Value = product.IsActive }
             };
 
             try
@@ -189,7 +188,7 @@ namespace BeverageWebsite.DAL
                 throw new ArgumentNullException(nameof(product));
             }
 
-            const string sql = @"UPDATE dbo.Product SET CategoryId = @CategoryId, ProductName = @ProductName, Description = @Description, Price = @Price, ImageUrl = @ImageUrl, IsActive = @IsActive, CreatedAt = @CreatedAt WHERE ProductId = @ProductId";
+            const string sql = @"UPDATE dbo.Product SET CategoryId = @CategoryId, ProductName = @ProductName, Description = @Description, Price = @Price, ImageUrl = @ImageUrl, IsActive = @IsActive WHERE ProductId = @ProductId";
             var parameters = new[]
             {
                 new SqlParameter("@ProductId", SqlDbType.Int) { Value = product.ProductId },
@@ -198,8 +197,7 @@ namespace BeverageWebsite.DAL
                 new SqlParameter("@Description", SqlDbType.NVarChar, 1000) { Value = (object)product.Description ?? DBNull.Value },
                 new SqlParameter("@Price", SqlDbType.Decimal) { Value = product.Price },
                 new SqlParameter("@ImageUrl", SqlDbType.NVarChar, 500) { Value = (object)product.ImageUrl ?? DBNull.Value },
-                new SqlParameter("@IsActive", SqlDbType.Bit) { Value = product.IsActive },
-                new SqlParameter("@CreatedAt", SqlDbType.DateTime2) { Value = product.CreatedAt }
+                new SqlParameter("@IsActive", SqlDbType.Bit) { Value = product.IsActive }
             };
 
             try
