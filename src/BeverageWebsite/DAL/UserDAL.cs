@@ -190,15 +190,34 @@ namespace BeverageWebsite.DAL
                 throw new ArgumentNullException(nameof(user));
             }
 
+            var normalizedUserName = NormalizeRequiredString(
+                user.UserName,
+                nameof(user.UserName),
+                "User name",
+                100);
+            var normalizedEmail = ValidateAndNormalizeEmail(user.Email);
+            ValidatePasswordHash(user.PasswordHash);
+            var normalizedRole = ValidateAndNormalizeRole(user.Role);
+            var fullNameValue = NormalizeOptionalString(
+                user.FullName,
+                nameof(user.FullName),
+                "Full name",
+                200);
+            var phoneValue = NormalizeOptionalString(
+                user.Phone,
+                nameof(user.Phone),
+                "Phone",
+                20);
+
             const string sql = @"INSERT INTO dbo.[User] (UserName, Email, PasswordHash, FullName, Phone, Role, IsActive) VALUES (@UserName, @Email, @PasswordHash, @FullName, @Phone, @Role, @IsActive)";
             var parameters = new[]
             {
-                new SqlParameter("@UserName", SqlDbType.NVarChar, 100) { Value = user.UserName ?? string.Empty },
-                new SqlParameter("@Email", SqlDbType.NVarChar, 255) { Value = user.Email ?? string.Empty },
-                new SqlParameter("@PasswordHash", SqlDbType.NVarChar, 255) { Value = user.PasswordHash ?? string.Empty },
-                new SqlParameter("@FullName", SqlDbType.NVarChar, 200) { Value = (object)user.FullName ?? DBNull.Value },
-                new SqlParameter("@Phone", SqlDbType.NVarChar, 20) { Value = (object)user.Phone ?? DBNull.Value },
-                new SqlParameter("@Role", SqlDbType.NVarChar, 20) { Value = user.Role ?? string.Empty },
+                new SqlParameter("@UserName", SqlDbType.NVarChar, 100) { Value = normalizedUserName },
+                new SqlParameter("@Email", SqlDbType.NVarChar, 255) { Value = normalizedEmail },
+                new SqlParameter("@PasswordHash", SqlDbType.NVarChar, 255) { Value = user.PasswordHash },
+                new SqlParameter("@FullName", SqlDbType.NVarChar, 200) { Value = fullNameValue },
+                new SqlParameter("@Phone", SqlDbType.NVarChar, 20) { Value = phoneValue },
+                new SqlParameter("@Role", SqlDbType.NVarChar, 20) { Value = normalizedRole },
                 new SqlParameter("@IsActive", SqlDbType.Bit) { Value = user.IsActive }
             };
 
@@ -208,7 +227,7 @@ namespace BeverageWebsite.DAL
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Failed to insert user. Details: {ex.Message}", ex);
+                throw new InvalidOperationException("Failed to insert the user.", ex);
             }
         }
 
@@ -224,15 +243,38 @@ namespace BeverageWebsite.DAL
                 throw new ArgumentNullException(nameof(user));
             }
 
+            if (user.UserId <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(user.UserId), "User identifier must be greater than zero.");
+            }
+
+            var normalizedUserName = NormalizeRequiredString(
+                user.UserName,
+                nameof(user.UserName),
+                "User name",
+                100);
+            var normalizedEmail = ValidateAndNormalizeEmail(user.Email);
+            var normalizedRole = ValidateAndNormalizeRole(user.Role);
+            var fullNameValue = NormalizeOptionalString(
+                user.FullName,
+                nameof(user.FullName),
+                "Full name",
+                200);
+            var phoneValue = NormalizeOptionalString(
+                user.Phone,
+                nameof(user.Phone),
+                "Phone",
+                20);
+
             const string sql = @"UPDATE dbo.[User] SET UserName = @UserName, Email = @Email, FullName = @FullName, Phone = @Phone, Role = @Role, IsActive = @IsActive WHERE UserId = @UserId";
             var parameters = new[]
             {
                 new SqlParameter("@UserId", SqlDbType.Int) { Value = user.UserId },
-                new SqlParameter("@UserName", SqlDbType.NVarChar, 100) { Value = user.UserName ?? string.Empty },
-                new SqlParameter("@Email", SqlDbType.NVarChar, 255) { Value = user.Email ?? string.Empty },
-                new SqlParameter("@FullName", SqlDbType.NVarChar, 200) { Value = (object)user.FullName ?? DBNull.Value },
-                new SqlParameter("@Phone", SqlDbType.NVarChar, 20) { Value = (object)user.Phone ?? DBNull.Value },
-                new SqlParameter("@Role", SqlDbType.NVarChar, 20) { Value = user.Role ?? string.Empty },
+                new SqlParameter("@UserName", SqlDbType.NVarChar, 100) { Value = normalizedUserName },
+                new SqlParameter("@Email", SqlDbType.NVarChar, 255) { Value = normalizedEmail },
+                new SqlParameter("@FullName", SqlDbType.NVarChar, 200) { Value = fullNameValue },
+                new SqlParameter("@Phone", SqlDbType.NVarChar, 20) { Value = phoneValue },
+                new SqlParameter("@Role", SqlDbType.NVarChar, 20) { Value = normalizedRole },
                 new SqlParameter("@IsActive", SqlDbType.Bit) { Value = user.IsActive }
             };
 
@@ -242,7 +284,7 @@ namespace BeverageWebsite.DAL
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Failed to update user. Details: {ex.Message}", ex);
+                throw new InvalidOperationException("Failed to update the user.", ex);
             }
         }
 
@@ -259,15 +301,7 @@ namespace BeverageWebsite.DAL
                 throw new ArgumentOutOfRangeException(nameof(userId), "User identifier must be greater than zero.");
             }
 
-            if (string.IsNullOrWhiteSpace(passwordHash))
-            {
-                throw new ArgumentException("Password hash is required.", nameof(passwordHash));
-            }
-
-            if (passwordHash.Length > 255)
-            {
-                throw new ArgumentOutOfRangeException(nameof(passwordHash), "Password hash must not exceed 255 characters.");
-            }
+            ValidatePasswordHash(passwordHash);
 
             const string sql = @"UPDATE dbo.[User]
                                  SET PasswordHash = @PasswordHash
@@ -307,6 +341,11 @@ namespace BeverageWebsite.DAL
         /// <returns>The number of rows affected.</returns>
         public int Delete(int userId)
         {
+            if (userId <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(userId), "User identifier must be greater than zero.");
+            }
+
             const string sql = @"DELETE FROM dbo.[User] WHERE UserId = @UserId";
             var parameters = new[]
             {
@@ -319,25 +358,90 @@ namespace BeverageWebsite.DAL
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Failed to delete user {userId}. Details: {ex.Message}", ex);
+                throw new InvalidOperationException("Failed to delete the user.", ex);
+            }
+        }
+
+        private static string NormalizeRequiredString(
+            string value,
+            string parameterName,
+            string fieldName,
+            int maximumLength)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                throw new ArgumentException($"{fieldName} is required.", parameterName);
+            }
+
+            var normalizedValue = value.Trim();
+
+            if (normalizedValue.Length > maximumLength)
+            {
+                throw new ArgumentOutOfRangeException(
+                    parameterName,
+                    $"{fieldName} must not exceed {maximumLength} characters.");
+            }
+
+            return normalizedValue;
+        }
+
+        private static object NormalizeOptionalString(
+            string value,
+            string parameterName,
+            string fieldName,
+            int maximumLength)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return DBNull.Value;
+            }
+
+            var normalizedValue = value.Trim();
+
+            if (normalizedValue.Length > maximumLength)
+            {
+                throw new ArgumentOutOfRangeException(
+                    parameterName,
+                    $"{fieldName} must not exceed {maximumLength} characters.");
+            }
+
+            return normalizedValue;
+        }
+
+        private static string ValidateAndNormalizeRole(string role)
+        {
+            var normalizedRole = NormalizeRequiredString(
+                role,
+                nameof(role),
+                "Role",
+                20);
+
+            if (!string.Equals(normalizedRole, "Admin", StringComparison.Ordinal)
+                && !string.Equals(normalizedRole, "Customer", StringComparison.Ordinal)
+                && !string.Equals(normalizedRole, "Staff", StringComparison.Ordinal))
+            {
+                throw new ArgumentException("Role is invalid.", nameof(role));
+            }
+
+            return normalizedRole;
+        }
+
+        private static void ValidatePasswordHash(string passwordHash)
+        {
+            if (string.IsNullOrWhiteSpace(passwordHash))
+            {
+                throw new ArgumentException("Password hash is required.", nameof(passwordHash));
+            }
+
+            if (passwordHash.Length > 255)
+            {
+                throw new ArgumentOutOfRangeException(nameof(passwordHash), "Password hash must not exceed 255 characters.");
             }
         }
 
         private static string ValidateAndNormalizeEmail(string email)
         {
-            if (string.IsNullOrWhiteSpace(email))
-            {
-                throw new ArgumentException("Email is required.", nameof(email));
-            }
-
-            var normalizedEmail = email.Trim();
-
-            if (normalizedEmail.Length > 255)
-            {
-                throw new ArgumentOutOfRangeException(nameof(email), "Email must not exceed 255 characters.");
-            }
-
-            return normalizedEmail;
+            return NormalizeRequiredString(email, nameof(email), "Email", 255);
         }
 
         private static User MapUser(SqlDataReader reader)
