@@ -463,9 +463,9 @@ namespace BeverageWebsite.DAL
             DateTime orderDate)
         {
             const string sql = @"INSERT INTO dbo.[Order]
-                                     (UserId, AddressId, PromotionId, OrderDate, OrderStatus, TotalAmount, ShippingFee, FinalAmount)
+                                     (UserId, AddressId, PromotionId, OrderDate, TotalAmount, ShippingFee, FinalAmount)
                                  VALUES
-                                     (@UserId, @AddressId, @PromotionId, @OrderDate, @OrderStatus, @TotalAmount, @ShippingFee,
+                                     (@UserId, @AddressId, @PromotionId, @OrderDate, @TotalAmount, @ShippingFee,
                                       CAST(@TotalAmount + @ShippingFee AS DECIMAL(12,2)));
                                  SELECT CAST(SCOPE_IDENTITY() AS INT);";
 
@@ -478,10 +478,6 @@ namespace BeverageWebsite.DAL
                     Value = order.PromotionId.HasValue ? (object)order.PromotionId.Value : DBNull.Value
                 });
                 command.Parameters.Add(new SqlParameter("@OrderDate", SqlDbType.DateTime2) { Value = orderDate });
-                command.Parameters.Add(new SqlParameter("@OrderStatus", SqlDbType.NVarChar, 50)
-                {
-                    Value = (object)order.OrderStatus ?? DBNull.Value
-                });
                 command.Parameters.Add(CreateDecimalParameter("@TotalAmount", totalAmount));
                 command.Parameters.Add(CreateDecimalParameter("@ShippingFee", order.ShippingFee));
 
