@@ -158,10 +158,11 @@ namespace BeverageWebsite.DAL
         /// <returns>True if the user exists; otherwise, false.</returns>
         public bool ExistsByEmail(string email)
         {
+            var normalizedEmail = ValidateAndNormalizeEmail(email);
             const string sql = @"SELECT CAST(CASE WHEN EXISTS (SELECT 1 FROM dbo.[User] WHERE Email = @Email) THEN 1 ELSE 0 END AS BIT)";
             var parameters = new[]
             {
-                new SqlParameter("@Email", SqlDbType.NVarChar, 255) { Value = email ?? string.Empty }
+                new SqlParameter("@Email", SqlDbType.NVarChar, 255) { Value = normalizedEmail }
             };
 
             try
@@ -171,7 +172,9 @@ namespace BeverageWebsite.DAL
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Failed to check user email existence '{email}'. Details: {ex.Message}", ex);
+                throw new InvalidOperationException(
+                    "Failed to check whether the user email exists.",
+                    ex);
             }
         }
 
