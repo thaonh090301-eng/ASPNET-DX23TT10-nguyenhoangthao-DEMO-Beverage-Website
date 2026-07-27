@@ -82,6 +82,7 @@
     <Compile Include="DAL\ProductDAL.cs" />
     <Compile Include="DAL\PromotionDAL.cs" />
     <Compile Include="DAL\PaymentDAL.cs" />
+    <Compile Include="DAL\ShipmentDAL.cs" />
     <Compile Include="DAL\UserDAL.cs" />
     <Compile Include="DAL\InventoryDAL.cs" />
     <Compile Include="DAL\CartDAL.cs" />
