@@ -16,6 +16,16 @@ namespace BeverageWebsite.DAL
         private const int ShipmentStatusMaxLength = 50;
         private const byte ShipmentDateScale = 7;
 
+        private static readonly HashSet<string> AllowedShipmentStatuses =
+            new HashSet<string>(StringComparer.Ordinal)
+            {
+                "Pending",
+                "Packed",
+                "Shipping",
+                "Delivered",
+                "Cancelled"
+            };
+
         private readonly DataProvider _dataProvider;
 
         /// <summary>
@@ -87,7 +97,7 @@ namespace BeverageWebsite.DAL
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException("Failed to retrieve shipment by identifier.", ex);
+                throw new InvalidOperationException("Failed to retrieve the shipment.", ex);
             }
 
             return null;
@@ -125,7 +135,7 @@ namespace BeverageWebsite.DAL
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException("Failed to retrieve shipment by order identifier.", ex);
+                throw new InvalidOperationException("Failed to retrieve the shipment for the order.", ex);
             }
 
             return null;
@@ -170,7 +180,7 @@ namespace BeverageWebsite.DAL
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException("Failed to retrieve shipment by tracking number.", ex);
+                throw new InvalidOperationException("Failed to retrieve the shipment by tracking number.", ex);
             }
 
             return null;
@@ -198,14 +208,23 @@ namespace BeverageWebsite.DAL
                                      (@OrderId, @ShippingProvider, @TrackingNumber, @ShipmentStatus, @ShippedAt, @DeliveredAt)";
             var parameters = CreateWriteParameters(shipment);
 
+            int affectedRows;
+
             try
             {
-                return _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
+                affectedRows = _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException("Failed to insert shipment.", ex);
+                throw new InvalidOperationException("Failed to insert the shipment.", ex);
             }
+
+            if (affectedRows != 1)
+            {
+                throw new InvalidOperationException("The shipment insert did not affect exactly one record.");
+            }
+
+            return affectedRows;
         }
 
         /// <summary>
@@ -242,14 +261,29 @@ namespace BeverageWebsite.DAL
             parameters[writeParameters.Length] =
                 new SqlParameter("@ShipmentId", SqlDbType.Int) { Value = shipment.ShipmentId };
 
+            int affectedRows;
+
             try
             {
-                return _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
+                affectedRows = _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException("Failed to update shipment.", ex);
+                throw new InvalidOperationException("Failed to update the shipment.", ex);
             }
+
+            if (affectedRows == 0)
+            {
+                throw new InvalidOperationException(
+                    "The shipment was not found or does not match the expected order.");
+            }
+
+            if (affectedRows != 1)
+            {
+                throw new InvalidOperationException("The shipment update did not affect exactly one record.");
+            }
+
+            return affectedRows;
         }
 
         /// <summary>
@@ -267,7 +301,7 @@ namespace BeverageWebsite.DAL
         public int UpdateStatus(int shipmentId, string status)
         {
             ValidateShipmentId(shipmentId);
-            ValidateRequiredString(status, nameof(status), ShipmentStatusMaxLength);
+            ValidateShipmentStatus(status, nameof(status));
 
             const string sql = @"UPDATE dbo.Shipment
                                  SET ShipmentStatus = @ShipmentStatus
@@ -281,14 +315,28 @@ namespace BeverageWebsite.DAL
                 }
             };
 
+            int affectedRows;
+
             try
             {
-                return _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
+                affectedRows = _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException("Failed to update shipment status.", ex);
+                throw new InvalidOperationException("Failed to update the shipment status.", ex);
             }
+
+            if (affectedRows == 0)
+            {
+                throw new InvalidOperationException("The shipment was not found.");
+            }
+
+            if (affectedRows != 1)
+            {
+                throw new InvalidOperationException("The shipment status update did not affect exactly one record.");
+            }
+
+            return affectedRows;
         }
 
         /// <summary>
@@ -309,14 +357,28 @@ namespace BeverageWebsite.DAL
                 new SqlParameter("@ShipmentId", SqlDbType.Int) { Value = shipmentId }
             };
 
+            int affectedRows;
+
             try
             {
-                return _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
+                affectedRows = _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException("Failed to delete shipment.", ex);
+                throw new InvalidOperationException("Failed to delete the shipment.", ex);
             }
+
+            if (affectedRows == 0)
+            {
+                throw new InvalidOperationException("The shipment was not found.");
+            }
+
+            if (affectedRows != 1)
+            {
+                throw new InvalidOperationException("The shipment delete did not affect exactly one record.");
+            }
+
+            return affectedRows;
         }
 
         private static Shipment MapShipment(SqlDataReader reader)
@@ -408,10 +470,9 @@ namespace BeverageWebsite.DAL
                 shipment.TrackingNumber,
                 nameof(shipment.TrackingNumber),
                 TrackingNumberMaxLength);
-            ValidateRequiredString(
+            ValidateShipmentStatus(
                 shipment.ShipmentStatus,
-                nameof(shipment.ShipmentStatus),
-                ShipmentStatusMaxLength);
+                nameof(shipment.ShipmentStatus));
 
             if (shipment.ShippedAt.HasValue
                 && shipment.DeliveredAt.HasValue
@@ -420,6 +481,16 @@ namespace BeverageWebsite.DAL
                 throw new ArgumentException(
                     "Delivery date cannot be earlier than the shipping date.",
                     nameof(shipment));
+            }
+        }
+
+        private static void ValidateShipmentStatus(string value, string parameterName)
+        {
+            ValidateRequiredString(value, parameterName, ShipmentStatusMaxLength);
+
+            if (!AllowedShipmentStatuses.Contains(value.Trim()))
+            {
+                throw new ArgumentException("Shipment status is invalid.", parameterName);
             }
         }
 
