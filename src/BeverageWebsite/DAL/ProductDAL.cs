@@ -339,14 +339,28 @@ ORDER BY P.ProductName, P.ProductId";
                 new SqlParameter("@ProductId", SqlDbType.Int) { Value = id }
             };
 
+            int affectedRows;
+
             try
             {
-                return _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
+                affectedRows = _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
             }
             catch (Exception ex)
             {
                 throw new InvalidOperationException("Failed to delete the product.", ex);
             }
+
+            if (affectedRows == 0)
+            {
+                throw new InvalidOperationException("The product was not found.");
+            }
+
+            if (affectedRows != 1)
+            {
+                throw new InvalidOperationException("The product delete did not affect exactly one record.");
+            }
+
+            return affectedRows;
         }
 
         private static void ValidateIdentifier(int value, string parameterName)
