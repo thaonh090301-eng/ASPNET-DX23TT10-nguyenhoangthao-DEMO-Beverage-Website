@@ -67,6 +67,7 @@
     <Compile Include="BLL\CategoryBLL.cs" />
     <Compile Include="BLL\InventoryBLL.cs" />
     <Compile Include="BLL\ProductBLL.cs" />
+    <Compile Include="BLL\PromotionBLL.cs" />
     <Compile Include="Models\Address.cs" />
     <Compile Include="Models\Cart.cs" />
     <Compile Include="Models\CartItem.cs" />
