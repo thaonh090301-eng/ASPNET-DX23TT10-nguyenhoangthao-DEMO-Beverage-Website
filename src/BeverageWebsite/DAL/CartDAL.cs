@@ -59,22 +59,35 @@ namespace BeverageWebsite.DAL
         /// <returns>The number of rows affected.</returns>
         public int CreateCart(int userId)
         {
-            const string sql = @"INSERT INTO dbo.Cart (UserId, CreatedAt, UpdatedAt) VALUES (@UserId, @CreatedAt, @UpdatedAt)";
+            if (userId <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(userId), "User identifier must be greater than zero.");
+            }
+
+            const string sql = @"INSERT INTO dbo.Cart (UserId)
+                                 VALUES (@UserId)";
             var parameters = new[]
             {
-                new SqlParameter("@UserId", SqlDbType.Int) { Value = userId },
-                new SqlParameter("@CreatedAt", SqlDbType.DateTime2) { Value = DateTime.UtcNow },
-                new SqlParameter("@UpdatedAt", SqlDbType.DateTime2) { Value = DateTime.UtcNow }
+                new SqlParameter("@UserId", SqlDbType.Int) { Value = userId }
             };
+
+            int affectedRows;
 
             try
             {
-                return _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
+                affectedRows = _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Failed to create cart for user {userId}. Details: {ex.Message}", ex);
+                throw new InvalidOperationException("Failed to create the cart.", ex);
             }
+
+            if (affectedRows != 1)
+            {
+                throw new InvalidOperationException("The cart insert did not affect exactly one record.");
+            }
+
+            return affectedRows;
         }
 
         /// <summary>
