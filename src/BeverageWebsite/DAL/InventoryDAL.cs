@@ -42,7 +42,7 @@ namespace BeverageWebsite.DAL
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Failed to retrieve inventories. Details: {ex.Message}", ex);
+                throw new InvalidOperationException("Failed to retrieve inventory records.", ex);
             }
 
             return inventories;
@@ -114,7 +114,7 @@ namespace BeverageWebsite.DAL
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException("Failed to retrieve the inventory record.", ex);
+                throw new InvalidOperationException("Failed to retrieve inventory for the product.", ex);
             }
 
             return null;
@@ -280,7 +280,7 @@ WHERE InventoryId = @InventoryId
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException("Failed to update the inventory stock.", ex);
+                throw new InvalidOperationException("Failed to update inventory stock.", ex);
             }
 
             if (affectedRows == 0)
@@ -335,13 +335,19 @@ WHERE InventoryId = @InventoryId
 
         private static Inventory MapInventory(SqlDataReader reader)
         {
+            var inventoryIdOrdinal = reader.GetOrdinal("InventoryId");
+            var productIdOrdinal = reader.GetOrdinal("ProductId");
+            var stockQuantityOrdinal = reader.GetOrdinal("StockQuantity");
+            var reorderLevelOrdinal = reader.GetOrdinal("ReorderLevel");
+            var lastUpdatedAtOrdinal = reader.GetOrdinal("LastUpdatedAt");
+
             return new Inventory
             {
-                InventoryId = reader.IsDBNull(reader.GetOrdinal("InventoryId")) ? 0 : reader.GetInt32(reader.GetOrdinal("InventoryId")),
-                ProductId = reader.IsDBNull(reader.GetOrdinal("ProductId")) ? 0 : reader.GetInt32(reader.GetOrdinal("ProductId")),
-                StockQuantity = reader.IsDBNull(reader.GetOrdinal("StockQuantity")) ? 0 : reader.GetInt32(reader.GetOrdinal("StockQuantity")),
-                ReorderLevel = reader.IsDBNull(reader.GetOrdinal("ReorderLevel")) ? 0 : reader.GetInt32(reader.GetOrdinal("ReorderLevel")),
-                LastUpdatedAt = reader.IsDBNull(reader.GetOrdinal("LastUpdatedAt")) ? DateTime.MinValue : reader.GetDateTime(reader.GetOrdinal("LastUpdatedAt"))
+                InventoryId = reader.IsDBNull(inventoryIdOrdinal) ? 0 : reader.GetInt32(inventoryIdOrdinal),
+                ProductId = reader.IsDBNull(productIdOrdinal) ? 0 : reader.GetInt32(productIdOrdinal),
+                StockQuantity = reader.IsDBNull(stockQuantityOrdinal) ? 0 : reader.GetInt32(stockQuantityOrdinal),
+                ReorderLevel = reader.IsDBNull(reorderLevelOrdinal) ? 0 : reader.GetInt32(reorderLevelOrdinal),
+                LastUpdatedAt = reader.IsDBNull(lastUpdatedAtOrdinal) ? DateTime.MinValue : reader.GetDateTime(lastUpdatedAtOrdinal)
             };
         }
     }
