@@ -14,6 +14,11 @@ namespace BeverageWebsite.DAL
         private const int ProductNameMaxLength = 200;
         private const int DescriptionMaxLength = 1000;
         private const int ImageUrlMaxLength = 500;
+        private const int SearchKeywordMaxLength = DescriptionMaxLength;
+        private const int EscapedSearchKeywordMaxLength =
+            SearchKeywordMaxLength * 2;
+        private const int SearchPatternMaxLength =
+            EscapedSearchKeywordMaxLength + 2;
 
         private readonly DataProvider _dataProvider;
 
@@ -46,7 +51,7 @@ namespace BeverageWebsite.DAL
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Failed to retrieve products. Details: {ex.Message}", ex);
+                throw new InvalidOperationException("Failed to retrieve products.", ex);
             }
 
             return products;
@@ -126,11 +131,39 @@ namespace BeverageWebsite.DAL
         /// <returns>A list of <see cref="Product"/> objects.</returns>
         public List<Product> Search(string keyword)
         {
+            if (string.IsNullOrWhiteSpace(keyword))
+            {
+                throw new ArgumentException("A search keyword must be provided.", nameof(keyword));
+            }
+
+            var normalizedKeyword = keyword.Trim();
+
+            if (normalizedKeyword.Length > SearchKeywordMaxLength)
+            {
+                throw new ArgumentException("The search keyword exceeds the allowed maximum length.", nameof(keyword));
+            }
+
             var products = new List<Product>();
-            const string sql = @"SELECT ProductId, CategoryId, ProductName, Description, Price, ImageUrl, IsActive, CreatedAt FROM dbo.Product WHERE ProductName LIKE @Keyword OR Description LIKE @Keyword ORDER BY ProductName";
+            const string sql = @"
+SELECT
+    P.ProductId,
+    P.CategoryId,
+    P.ProductName,
+    P.Description,
+    P.Price,
+    P.ImageUrl,
+    P.IsActive,
+    P.CreatedAt
+FROM dbo.Product AS P
+WHERE (P.ProductName LIKE @Keyword ESCAPE N'\'
+       OR P.Description LIKE @Keyword ESCAPE N'\')
+ORDER BY P.ProductName, P.ProductId";
             var parameters = new[]
             {
-                new SqlParameter("@Keyword", SqlDbType.NVarChar, 200) { Value = $"%{keyword ?? string.Empty}%" }
+                new SqlParameter("@Keyword", SqlDbType.NVarChar, SearchPatternMaxLength)
+                {
+                    Value = $"%{EscapeLikePattern(normalizedKeyword)}%"
+                }
             };
 
             try
@@ -145,10 +178,19 @@ namespace BeverageWebsite.DAL
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Failed to search products with keyword '{keyword}'. Details: {ex.Message}", ex);
+                throw new InvalidOperationException("Failed to search products.", ex);
             }
 
             return products;
+        }
+
+        private static string EscapeLikePattern(string value)
+        {
+            return value
+                .Replace(@"\", @"\\")
+                .Replace("%", @"\%")
+                .Replace("_", @"\_")
+                .Replace("[", @"\[");
         }
 
         /// <summary>
