@@ -72,6 +72,7 @@
     <Compile Include="BLL\PaymentBLL.cs" />
     <Compile Include="BLL\ProductBLL.cs" />
     <Compile Include="BLL\PromotionBLL.cs" />
+    <Compile Include="BLL\ShipmentBLL.cs" />
     <Compile Include="BLL\UserBLL.cs" />
     <Compile Include="Models\Address.cs" />
     <Compile Include="Models\Cart.cs" />
