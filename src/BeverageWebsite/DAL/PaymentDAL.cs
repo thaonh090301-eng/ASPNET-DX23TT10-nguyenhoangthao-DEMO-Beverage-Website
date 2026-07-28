@@ -18,6 +18,24 @@ namespace BeverageWebsite.DAL
         private const byte PaidAmountScale = 2;
         private const byte PaidAtScale = 7;
 
+        private static readonly HashSet<string> AllowedPaymentMethods =
+            new HashSet<string>(StringComparer.Ordinal)
+            {
+                "Cash",
+                "Card",
+                "BankTransfer",
+                "DigitalWallet"
+            };
+
+        private static readonly HashSet<string> AllowedPaymentStatuses =
+            new HashSet<string>(StringComparer.Ordinal)
+            {
+                "Pending",
+                "Paid",
+                "Failed",
+                "Refunded"
+            };
+
         private readonly DataProvider _dataProvider;
 
         /// <summary>
@@ -155,14 +173,23 @@ namespace BeverageWebsite.DAL
                                      (@OrderId, @PaymentMethod, @PaymentStatus, @PaidAmount, @PaidAt, @TransactionReference)";
             var parameters = CreateWriteParameters(payment);
 
+            int affectedRows;
+
             try
             {
-                return _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
+                affectedRows = _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
             }
             catch (Exception ex)
             {
                 throw new InvalidOperationException("Failed to insert payment.", ex);
             }
+
+            if (affectedRows != 1)
+            {
+                throw new InvalidOperationException("The payment insert did not affect exactly one record.");
+            }
+
+            return affectedRows;
         }
 
         /// <summary>
@@ -199,14 +226,28 @@ namespace BeverageWebsite.DAL
             parameters[writeParameters.Length] =
                 new SqlParameter("@PaymentId", SqlDbType.Int) { Value = payment.PaymentId };
 
+            int affectedRows;
+
             try
             {
-                return _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
+                affectedRows = _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
             }
             catch (Exception ex)
             {
                 throw new InvalidOperationException("Failed to update payment.", ex);
             }
+
+            if (affectedRows == 0)
+            {
+                throw new InvalidOperationException("The payment was not found or does not match the expected order.");
+            }
+
+            if (affectedRows != 1)
+            {
+                throw new InvalidOperationException("The payment update did not affect exactly one record.");
+            }
+
+            return affectedRows;
         }
 
         /// <summary>
@@ -224,7 +265,7 @@ namespace BeverageWebsite.DAL
         public int UpdateStatus(int paymentId, string status)
         {
             ValidatePaymentId(paymentId);
-            ValidateRequiredString(status, nameof(status), PaymentStatusMaxLength);
+            ValidatePaymentStatus(status, nameof(status));
 
             const string sql = @"UPDATE dbo.Payment
                                  SET PaymentStatus = @PaymentStatus
@@ -238,14 +279,28 @@ namespace BeverageWebsite.DAL
                 }
             };
 
+            int affectedRows;
+
             try
             {
-                return _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
+                affectedRows = _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
             }
             catch (Exception ex)
             {
                 throw new InvalidOperationException("Failed to update payment status.", ex);
             }
+
+            if (affectedRows == 0)
+            {
+                throw new InvalidOperationException("The payment was not found.");
+            }
+
+            if (affectedRows != 1)
+            {
+                throw new InvalidOperationException("The payment status update did not affect exactly one record.");
+            }
+
+            return affectedRows;
         }
 
         /// <summary>
@@ -266,14 +321,28 @@ namespace BeverageWebsite.DAL
                 new SqlParameter("@PaymentId", SqlDbType.Int) { Value = paymentId }
             };
 
+            int affectedRows;
+
             try
             {
-                return _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
+                affectedRows = _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
             }
             catch (Exception ex)
             {
                 throw new InvalidOperationException("Failed to delete payment.", ex);
             }
+
+            if (affectedRows == 0)
+            {
+                throw new InvalidOperationException("The payment was not found.");
+            }
+
+            if (affectedRows != 1)
+            {
+                throw new InvalidOperationException("The payment delete did not affect exactly one record.");
+            }
+
+            return affectedRows;
         }
 
         private static Payment MapPayment(SqlDataReader reader)
@@ -341,14 +410,12 @@ namespace BeverageWebsite.DAL
         private static void ValidatePayment(Payment payment)
         {
             ValidateOrderId(payment.OrderId);
-            ValidateRequiredString(
+            ValidatePaymentMethod(
                 payment.PaymentMethod,
-                nameof(payment.PaymentMethod),
-                PaymentMethodMaxLength);
-            ValidateRequiredString(
+                nameof(payment.PaymentMethod));
+            ValidatePaymentStatus(
                 payment.PaymentStatus,
-                nameof(payment.PaymentStatus),
-                PaymentStatusMaxLength);
+                nameof(payment.PaymentStatus));
 
             if (payment.PaidAmount < 0m)
             {
@@ -366,6 +433,26 @@ namespace BeverageWebsite.DAL
                         $"TransactionReference cannot exceed {TransactionReferenceMaxLength} characters.",
                         nameof(payment.TransactionReference));
                 }
+            }
+        }
+
+        private static void ValidatePaymentMethod(string value, string parameterName)
+        {
+            ValidateRequiredString(value, parameterName, PaymentMethodMaxLength);
+
+            if (!AllowedPaymentMethods.Contains(value.Trim()))
+            {
+                throw new ArgumentException("Payment method is invalid.", parameterName);
+            }
+        }
+
+        private static void ValidatePaymentStatus(string value, string parameterName)
+        {
+            ValidateRequiredString(value, parameterName, PaymentStatusMaxLength);
+
+            if (!AllowedPaymentStatuses.Contains(value.Trim()))
+            {
+                throw new ArgumentException("Payment status is invalid.", parameterName);
             }
         }
 
