@@ -28,6 +28,8 @@ namespace BeverageWebsite.DAL
         /// <returns>A <see cref="Cart"/> object if found; otherwise, null.</returns>
         public Cart GetCartByUserId(int userId)
         {
+            ValidateIdentifier(userId, nameof(userId));
+
             const string sql = @"SELECT CartId, UserId, CreatedAt, UpdatedAt FROM dbo.Cart WHERE UserId = @UserId";
             var parameters = new[]
             {
@@ -46,7 +48,7 @@ namespace BeverageWebsite.DAL
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Failed to retrieve cart for user {userId}. Details: {ex.Message}", ex);
+                throw new InvalidOperationException("Failed to retrieve the cart.", ex);
             }
 
             return null;
@@ -97,6 +99,8 @@ namespace BeverageWebsite.DAL
         /// <returns>A list of <see cref="CartItem"/> objects.</returns>
         public List<CartItem> GetCartItems(int cartId)
         {
+            ValidateIdentifier(cartId, nameof(cartId));
+
             var items = new List<CartItem>();
             const string sql = @"SELECT CI.CartItemId, CI.CartId, CI.ProductId, CI.Quantity, CI.UnitPrice
                                  FROM dbo.CartItem CI
@@ -119,7 +123,7 @@ namespace BeverageWebsite.DAL
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Failed to retrieve cart items for cart {cartId}. Details: {ex.Message}", ex);
+                throw new InvalidOperationException("Failed to retrieve cart items.", ex);
             }
 
             return items;
@@ -454,7 +458,13 @@ namespace BeverageWebsite.DAL
         /// <returns>The total amount of the cart.</returns>
         public decimal GetCartTotal(int cartId)
         {
-            const string sql = @"SELECT ISNULL(SUM(CI.Quantity * CI.UnitPrice), 0) FROM dbo.CartItem CI WHERE CI.CartId = @CartId";
+            ValidateIdentifier(cartId, nameof(cartId));
+
+            const string sql = @"SELECT CAST(
+                                     ISNULL(SUM(CI.Quantity * CI.UnitPrice), 0)
+                                     AS DECIMAL(12,2))
+                                 FROM dbo.CartItem AS CI
+                                 WHERE CI.CartId = @CartId";
             var parameters = new[]
             {
                 new SqlParameter("@CartId", SqlDbType.Int) { Value = cartId }
@@ -467,7 +477,7 @@ namespace BeverageWebsite.DAL
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Failed to calculate cart total for cart {cartId}. Details: {ex.Message}", ex);
+                throw new InvalidOperationException("Failed to calculate the cart total.", ex);
             }
         }
 
@@ -478,6 +488,8 @@ namespace BeverageWebsite.DAL
         /// <returns>The total number of items in the cart.</returns>
         public int GetTotalItems(int cartId)
         {
+            ValidateIdentifier(cartId, nameof(cartId));
+
             const string sql = @"SELECT ISNULL(SUM(CI.Quantity), 0) FROM dbo.CartItem CI WHERE CI.CartId = @CartId";
             var parameters = new[]
             {
@@ -491,7 +503,15 @@ namespace BeverageWebsite.DAL
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Failed to calculate total items for cart {cartId}. Details: {ex.Message}", ex);
+                throw new InvalidOperationException("Failed to calculate the cart item count.", ex);
+            }
+        }
+
+        private static void ValidateIdentifier(int value, string parameterName)
+        {
+            if (value <= 0)
+            {
+                throw new ArgumentOutOfRangeException(parameterName, "Identifier must be greater than zero.");
             }
         }
 
@@ -522,24 +542,35 @@ namespace BeverageWebsite.DAL
 
         private static Cart MapCart(SqlDataReader reader)
         {
+            var cartIdOrdinal = reader.GetOrdinal("CartId");
+            var userIdOrdinal = reader.GetOrdinal("UserId");
+            var createdAtOrdinal = reader.GetOrdinal("CreatedAt");
+            var updatedAtOrdinal = reader.GetOrdinal("UpdatedAt");
+
             return new Cart
             {
-                CartId = reader.IsDBNull(reader.GetOrdinal("CartId")) ? 0 : reader.GetInt32(reader.GetOrdinal("CartId")),
-                UserId = reader.IsDBNull(reader.GetOrdinal("UserId")) ? 0 : reader.GetInt32(reader.GetOrdinal("UserId")),
-                CreatedAt = reader.IsDBNull(reader.GetOrdinal("CreatedAt")) ? DateTime.MinValue : reader.GetDateTime(reader.GetOrdinal("CreatedAt")),
-                UpdatedAt = reader.IsDBNull(reader.GetOrdinal("UpdatedAt")) ? DateTime.MinValue : reader.GetDateTime(reader.GetOrdinal("UpdatedAt"))
+                CartId = reader.IsDBNull(cartIdOrdinal) ? 0 : reader.GetInt32(cartIdOrdinal),
+                UserId = reader.IsDBNull(userIdOrdinal) ? 0 : reader.GetInt32(userIdOrdinal),
+                CreatedAt = reader.IsDBNull(createdAtOrdinal) ? DateTime.MinValue : reader.GetDateTime(createdAtOrdinal),
+                UpdatedAt = reader.IsDBNull(updatedAtOrdinal) ? DateTime.MinValue : reader.GetDateTime(updatedAtOrdinal)
             };
         }
 
         private static CartItem MapCartItem(SqlDataReader reader)
         {
+            var cartItemIdOrdinal = reader.GetOrdinal("CartItemId");
+            var cartIdOrdinal = reader.GetOrdinal("CartId");
+            var productIdOrdinal = reader.GetOrdinal("ProductId");
+            var quantityOrdinal = reader.GetOrdinal("Quantity");
+            var unitPriceOrdinal = reader.GetOrdinal("UnitPrice");
+
             return new CartItem
             {
-                CartItemId = reader.IsDBNull(reader.GetOrdinal("CartItemId")) ? 0 : reader.GetInt32(reader.GetOrdinal("CartItemId")),
-                CartId = reader.IsDBNull(reader.GetOrdinal("CartId")) ? 0 : reader.GetInt32(reader.GetOrdinal("CartId")),
-                ProductId = reader.IsDBNull(reader.GetOrdinal("ProductId")) ? 0 : reader.GetInt32(reader.GetOrdinal("ProductId")),
-                Quantity = reader.IsDBNull(reader.GetOrdinal("Quantity")) ? 0 : reader.GetInt32(reader.GetOrdinal("Quantity")),
-                UnitPrice = reader.IsDBNull(reader.GetOrdinal("UnitPrice")) ? 0m : reader.GetDecimal(reader.GetOrdinal("UnitPrice"))
+                CartItemId = reader.IsDBNull(cartItemIdOrdinal) ? 0 : reader.GetInt32(cartItemIdOrdinal),
+                CartId = reader.IsDBNull(cartIdOrdinal) ? 0 : reader.GetInt32(cartIdOrdinal),
+                ProductId = reader.IsDBNull(productIdOrdinal) ? 0 : reader.GetInt32(productIdOrdinal),
+                Quantity = reader.IsDBNull(quantityOrdinal) ? 0 : reader.GetInt32(quantityOrdinal),
+                UnitPrice = reader.IsDBNull(unitPriceOrdinal) ? 0m : reader.GetDecimal(unitPriceOrdinal)
             };
         }
     }
