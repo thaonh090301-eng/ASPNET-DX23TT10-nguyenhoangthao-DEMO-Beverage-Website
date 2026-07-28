@@ -314,14 +314,28 @@ WHERE InventoryId = @InventoryId
                 new SqlParameter("@InventoryId", SqlDbType.Int) { Value = inventoryId }
             };
 
+            int affectedRows;
+
             try
             {
-                return _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
+                affectedRows = _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
             }
             catch (Exception ex)
             {
                 throw new InvalidOperationException("Failed to delete the inventory record.", ex);
             }
+
+            if (affectedRows == 0)
+            {
+                throw new InvalidOperationException("The inventory record was not found.");
+            }
+
+            if (affectedRows != 1)
+            {
+                throw new InvalidOperationException("The inventory delete did not affect exactly one record.");
+            }
+
+            return affectedRows;
         }
 
         private static SqlParameter CreateLastUpdatedAtParameter(DateTime value)
