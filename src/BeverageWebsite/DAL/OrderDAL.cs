@@ -477,7 +477,7 @@ namespace BeverageWebsite.DAL
                 {
                     Value = order.PromotionId.HasValue ? (object)order.PromotionId.Value : DBNull.Value
                 });
-                command.Parameters.Add(new SqlParameter("@OrderDate", SqlDbType.DateTime2) { Value = orderDate });
+                command.Parameters.Add(CreateDateTime2Parameter("@OrderDate", orderDate));
                 command.Parameters.Add(CreateDecimalParameter("@TotalAmount", totalAmount));
                 command.Parameters.Add(CreateDecimalParameter("@ShippingFee", order.ShippingFee));
 
@@ -534,7 +534,7 @@ namespace BeverageWebsite.DAL
             {
                 command.Parameters.Add(new SqlParameter("@ProductId", SqlDbType.Int) { Value = productId });
                 command.Parameters.Add(new SqlParameter("@Quantity", SqlDbType.Int) { Value = quantity });
-                command.Parameters.Add(new SqlParameter("@LastUpdatedAt", SqlDbType.DateTime2) { Value = lastUpdatedAt });
+                command.Parameters.Add(CreateDateTime2Parameter("@LastUpdatedAt", lastUpdatedAt));
 
                 if (command.ExecuteNonQuery() != 1)
                 {
@@ -575,7 +575,7 @@ namespace BeverageWebsite.DAL
             using (var command = new SqlCommand(sql, connection, transaction))
             {
                 command.Parameters.Add(new SqlParameter("@CartId", SqlDbType.Int) { Value = cartId });
-                command.Parameters.Add(new SqlParameter("@UpdatedAt", SqlDbType.DateTime2) { Value = updatedAt });
+                command.Parameters.Add(CreateDateTime2Parameter("@UpdatedAt", updatedAt));
 
                 if (command.ExecuteNonQuery() != 1)
                 {
@@ -590,6 +590,17 @@ namespace BeverageWebsite.DAL
             {
                 Precision = 12,
                 Scale = 2,
+                Value = value
+            };
+        }
+
+        private static SqlParameter CreateDateTime2Parameter(
+            string parameterName,
+            DateTime value)
+        {
+            return new SqlParameter(parameterName, SqlDbType.DateTime2)
+            {
+                Scale = 7,
                 Value = value
             };
         }
