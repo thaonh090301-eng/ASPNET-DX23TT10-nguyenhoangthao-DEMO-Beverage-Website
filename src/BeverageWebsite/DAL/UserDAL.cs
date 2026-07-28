@@ -221,14 +221,23 @@ namespace BeverageWebsite.DAL
                 new SqlParameter("@IsActive", SqlDbType.Bit) { Value = user.IsActive }
             };
 
+            int affectedRows;
+
             try
             {
-                return _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
+                affectedRows = _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
             }
             catch (Exception ex)
             {
                 throw new InvalidOperationException("Failed to insert the user.", ex);
             }
+
+            if (affectedRows != 1)
+            {
+                throw new InvalidOperationException("The user insert did not affect exactly one record.");
+            }
+
+            return affectedRows;
         }
 
         /// <summary>
@@ -278,14 +287,28 @@ namespace BeverageWebsite.DAL
                 new SqlParameter("@IsActive", SqlDbType.Bit) { Value = user.IsActive }
             };
 
+            int affectedRows;
+
             try
             {
-                return _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
+                affectedRows = _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
             }
             catch (Exception ex)
             {
                 throw new InvalidOperationException("Failed to update the user.", ex);
             }
+
+            if (affectedRows == 0)
+            {
+                throw new InvalidOperationException("The user was not found.");
+            }
+
+            if (affectedRows != 1)
+            {
+                throw new InvalidOperationException("The user update did not affect exactly one record.");
+            }
+
+            return affectedRows;
         }
 
         /// <summary>
@@ -352,14 +375,28 @@ namespace BeverageWebsite.DAL
                 new SqlParameter("@UserId", SqlDbType.Int) { Value = userId }
             };
 
+            int affectedRows;
+
             try
             {
-                return _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
+                affectedRows = _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
             }
             catch (Exception ex)
             {
                 throw new InvalidOperationException("Failed to delete the user.", ex);
             }
+
+            if (affectedRows == 0)
+            {
+                throw new InvalidOperationException("The user was not found.");
+            }
+
+            if (affectedRows != 1)
+            {
+                throw new InvalidOperationException("The user delete did not affect exactly one record.");
+            }
+
+            return affectedRows;
         }
 
         private static string NormalizeRequiredString(
