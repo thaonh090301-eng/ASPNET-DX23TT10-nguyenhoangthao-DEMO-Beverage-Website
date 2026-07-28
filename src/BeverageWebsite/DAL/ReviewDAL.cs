@@ -289,31 +289,50 @@ namespace BeverageWebsite.DAL
         }
 
         /// <summary>
-        /// Deletes a review by its identifier.
+        /// Deletes a review owned by the specified user.
         /// </summary>
+        /// <param name="userId">The identifier of the user who owns the review.</param>
         /// <param name="reviewId">The review identifier.</param>
         /// <returns>The number of rows affected.</returns>
         /// <exception cref="ArgumentOutOfRangeException">
-        /// Thrown when <paramref name="reviewId"/> is not greater than zero.
+        /// Thrown when <paramref name="userId"/> or <paramref name="reviewId"/> is not greater than zero.
         /// </exception>
-        public int Delete(int reviewId)
+        public int Delete(int userId, int reviewId)
         {
+            ValidateUserId(userId);
             ValidateReviewId(reviewId);
 
-            const string sql = @"DELETE FROM dbo.Review WHERE ReviewId = @ReviewId";
+            const string sql = @"DELETE FROM dbo.Review
+                                 WHERE ReviewId = @ReviewId
+                                   AND UserId = @UserId";
             var parameters = new[]
             {
-                new SqlParameter("@ReviewId", SqlDbType.Int) { Value = reviewId }
+                new SqlParameter("@ReviewId", SqlDbType.Int) { Value = reviewId },
+                new SqlParameter("@UserId", SqlDbType.Int) { Value = userId }
             };
+
+            int affectedRows;
 
             try
             {
-                return _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
+                affectedRows = _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException("Failed to delete review.", ex);
+                throw new InvalidOperationException("Failed to delete the review.", ex);
             }
+
+            if (affectedRows == 0)
+            {
+                throw new InvalidOperationException("The review was not found or is not owned by the user.");
+            }
+
+            if (affectedRows != 1)
+            {
+                throw new InvalidOperationException("The review delete did not affect exactly one record.");
+            }
+
+            return affectedRows;
         }
 
         private static Review MapReview(SqlDataReader reader)
