@@ -11,6 +11,18 @@ namespace BeverageWebsite.DAL
     /// </summary>
     public class OrderDAL
     {
+        private const int OrderStatusMaxLength = 50;
+
+        private static readonly HashSet<string> AllowedOrderStatuses =
+            new HashSet<string>(StringComparer.Ordinal)
+            {
+                "Pending",
+                "Confirmed",
+                "Processing",
+                "Completed",
+                "Cancelled"
+            };
+
         private readonly DataProvider _dataProvider;
 
         /// <summary>
@@ -45,7 +57,7 @@ namespace BeverageWebsite.DAL
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Failed to retrieve orders. Details: {ex.Message}", ex);
+                throw new InvalidOperationException("Failed to retrieve orders.", ex);
             }
 
             return orders;
@@ -84,7 +96,7 @@ namespace BeverageWebsite.DAL
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Failed to retrieve order by id {orderId}. Details: {ex.Message}", ex);
+                throw new InvalidOperationException("Failed to retrieve the order.", ex);
             }
 
             return null;
@@ -125,7 +137,7 @@ namespace BeverageWebsite.DAL
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Failed to retrieve orders for user {userId}. Details: {ex.Message}", ex);
+                throw new InvalidOperationException("Failed to retrieve orders for the user.", ex);
             }
 
             return orders;
@@ -165,7 +177,7 @@ namespace BeverageWebsite.DAL
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Failed to retrieve order items for order {orderId}. Details: {ex.Message}", ex);
+                throw new InvalidOperationException("Failed to retrieve order items.", ex);
             }
 
             return items;
@@ -216,12 +228,12 @@ namespace BeverageWebsite.DAL
                     var cartUserId = GetCartUserId(connection, transaction, cartId);
                     if (!cartUserId.HasValue)
                     {
-                        throw new InvalidOperationException($"Cart {cartId} does not exist.");
+                        throw new InvalidOperationException("The cart does not exist.");
                     }
 
                     if (cartUserId.Value != order.UserId)
                     {
-                        throw new InvalidOperationException($"Cart {cartId} does not belong to the specified user.");
+                        throw new InvalidOperationException("The cart does not belong to the specified user.");
                     }
 
                     ValidateAddressOwnership(
@@ -233,7 +245,7 @@ namespace BeverageWebsite.DAL
                     var cartItems = ReadCheckoutItems(connection, transaction, cartId);
                     if (cartItems.Count == 0)
                     {
-                        throw new InvalidOperationException($"Cart {cartId} does not contain any items.");
+                        throw new InvalidOperationException("The cart does not contain any items.");
                     }
 
                     var totalAmount = CalculateCartTotal(connection, transaction, cartId);
@@ -258,7 +270,7 @@ namespace BeverageWebsite.DAL
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Failed to create order from cart {cartId}. Details: {ex.Message}", ex);
+                throw new InvalidOperationException("Failed to create the order from the cart.", ex);
             }
         }
 
@@ -280,23 +292,52 @@ namespace BeverageWebsite.DAL
                 throw new ArgumentException("Order status is required.", nameof(status));
             }
 
+            var normalizedStatus = status.Trim();
+
+            if (normalizedStatus.Length > OrderStatusMaxLength)
+            {
+                throw new ArgumentException("Order status exceeds the allowed maximum length.", nameof(status));
+            }
+
+            if (!AllowedOrderStatuses.Contains(normalizedStatus))
+            {
+                throw new ArgumentException("Order status is invalid.", nameof(status));
+            }
+
             const string sql = @"UPDATE dbo.[Order]
                                  SET OrderStatus = @OrderStatus
                                  WHERE OrderId = @OrderId";
             var parameters = new[]
             {
                 new SqlParameter("@OrderId", SqlDbType.Int) { Value = orderId },
-                new SqlParameter("@OrderStatus", SqlDbType.NVarChar, 50) { Value = status }
+                new SqlParameter("@OrderStatus", SqlDbType.NVarChar, OrderStatusMaxLength)
+                {
+                    Value = normalizedStatus
+                }
             };
+
+            int affectedRows;
 
             try
             {
-                return _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
+                affectedRows = _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Failed to update status for order {orderId}. Details: {ex.Message}", ex);
+                throw new InvalidOperationException("Failed to update the order status.", ex);
             }
+
+            if (affectedRows == 0)
+            {
+                throw new InvalidOperationException("The order was not found.");
+            }
+
+            if (affectedRows != 1)
+            {
+                throw new InvalidOperationException("The order status update did not affect exactly one record.");
+            }
+
+            return affectedRows;
         }
 
         private static int? GetCartUserId(SqlConnection connection, SqlTransaction transaction, int cartId)
@@ -381,44 +422,44 @@ namespace BeverageWebsite.DAL
 
                         if (reader.IsDBNull(productExistsOrdinal))
                         {
-                            throw new InvalidOperationException($"Product {productId} does not exist.");
+                            throw new InvalidOperationException("A product in the cart does not exist.");
                         }
 
                         if (reader.IsDBNull(isActiveOrdinal) || !reader.GetBoolean(isActiveOrdinal))
                         {
-                            throw new InvalidOperationException($"Product {productId} is inactive.");
+                            throw new InvalidOperationException("A product in the cart is inactive.");
                         }
 
                         if (reader.IsDBNull(quantityOrdinal))
                         {
-                            throw new InvalidOperationException($"Cart item {cartItemId} has no quantity.");
+                            throw new InvalidOperationException("A cart item has an invalid quantity.");
                         }
 
                         var quantity = reader.GetInt32(quantityOrdinal);
                         if (quantity <= 0)
                         {
-                            throw new InvalidOperationException($"Cart item {cartItemId} has an invalid quantity.");
+                            throw new InvalidOperationException("A cart item has an invalid quantity.");
                         }
 
                         if (reader.IsDBNull(unitPriceOrdinal))
                         {
-                            throw new InvalidOperationException($"Cart item {cartItemId} has no unit price.");
+                            throw new InvalidOperationException("A cart item has an invalid unit price.");
                         }
 
                         if (reader.IsDBNull(inventoryExistsOrdinal))
                         {
-                            throw new InvalidOperationException($"Inventory for product {productId} does not exist.");
+                            throw new InvalidOperationException("Inventory information is unavailable for a cart item.");
                         }
 
                         if (reader.IsDBNull(stockQuantityOrdinal))
                         {
-                            throw new InvalidOperationException($"Inventory for product {productId} has no stock quantity.");
+                            throw new InvalidOperationException("Inventory information is unavailable for a cart item.");
                         }
 
                         var stockQuantity = reader.GetInt32(stockQuantityOrdinal);
                         if (stockQuantity < quantity)
                         {
-                            throw new InvalidOperationException($"Insufficient stock for product {productId}.");
+                            throw new InvalidOperationException("Insufficient stock for a cart item.");
                         }
 
                         items.Add(new OrderItem
@@ -448,7 +489,7 @@ namespace BeverageWebsite.DAL
                 var result = command.ExecuteScalar();
                 if (result == null || result == DBNull.Value)
                 {
-                    throw new InvalidOperationException($"Unable to calculate the total for cart {cartId}.");
+                    throw new InvalidOperationException("The cart total could not be calculated.");
                 }
 
                 return Convert.ToDecimal(result);
@@ -512,7 +553,7 @@ namespace BeverageWebsite.DAL
 
                 if (command.ExecuteNonQuery() != 1)
                 {
-                    throw new InvalidOperationException($"Order item insert failed for order {orderId}.");
+                    throw new InvalidOperationException("An order item could not be inserted.");
                 }
             }
         }
@@ -538,7 +579,7 @@ namespace BeverageWebsite.DAL
 
                 if (command.ExecuteNonQuery() != 1)
                 {
-                    throw new InvalidOperationException($"Inventory update failed for product {productId}.");
+                    throw new InvalidOperationException("Inventory could not be updated.");
                 }
             }
         }
@@ -557,7 +598,7 @@ namespace BeverageWebsite.DAL
 
                 if (command.ExecuteNonQuery() != expectedItemCount)
                 {
-                    throw new InvalidOperationException($"Cart item deletion count did not match the expected count for cart {cartId}.");
+                    throw new InvalidOperationException("Cart items could not be removed.");
                 }
             }
         }
@@ -579,7 +620,7 @@ namespace BeverageWebsite.DAL
 
                 if (command.ExecuteNonQuery() != 1)
                 {
-                    throw new InvalidOperationException($"Cart timestamp update failed for cart {cartId}.");
+                    throw new InvalidOperationException("The cart timestamp could not be updated.");
                 }
             }
         }
