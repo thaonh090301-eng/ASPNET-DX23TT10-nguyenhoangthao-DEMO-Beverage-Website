@@ -648,31 +648,49 @@ namespace BeverageWebsite.DAL
 
         private static Order MapOrder(SqlDataReader reader)
         {
+            var orderIdOrdinal = reader.GetOrdinal("OrderId");
+            var userIdOrdinal = reader.GetOrdinal("UserId");
+            var addressIdOrdinal = reader.GetOrdinal("AddressId");
+            var promotionIdOrdinal = reader.GetOrdinal("PromotionId");
+            var orderDateOrdinal = reader.GetOrdinal("OrderDate");
+            var orderStatusOrdinal = reader.GetOrdinal("OrderStatus");
+            var totalAmountOrdinal = reader.GetOrdinal("TotalAmount");
+            var shippingFeeOrdinal = reader.GetOrdinal("ShippingFee");
+            var finalAmountOrdinal = reader.GetOrdinal("FinalAmount");
+
             return new Order
             {
-                OrderId = reader.IsDBNull(reader.GetOrdinal("OrderId")) ? 0 : reader.GetInt32(reader.GetOrdinal("OrderId")),
-                UserId = reader.IsDBNull(reader.GetOrdinal("UserId")) ? 0 : reader.GetInt32(reader.GetOrdinal("UserId")),
-                AddressId = reader.IsDBNull(reader.GetOrdinal("AddressId")) ? 0 : reader.GetInt32(reader.GetOrdinal("AddressId")),
-                PromotionId = reader.IsDBNull(reader.GetOrdinal("PromotionId")) ? (int?)null : reader.GetInt32(reader.GetOrdinal("PromotionId")),
-                OrderDate = reader.IsDBNull(reader.GetOrdinal("OrderDate")) ? DateTime.MinValue : reader.GetDateTime(reader.GetOrdinal("OrderDate")),
-                OrderStatus = reader.IsDBNull(reader.GetOrdinal("OrderStatus")) ? null : reader.GetString(reader.GetOrdinal("OrderStatus")),
-                TotalAmount = reader.IsDBNull(reader.GetOrdinal("TotalAmount")) ? 0m : reader.GetDecimal(reader.GetOrdinal("TotalAmount")),
-                ShippingFee = reader.IsDBNull(reader.GetOrdinal("ShippingFee")) ? 0m : reader.GetDecimal(reader.GetOrdinal("ShippingFee")),
-                FinalAmount = reader.IsDBNull(reader.GetOrdinal("FinalAmount")) ? 0m : reader.GetDecimal(reader.GetOrdinal("FinalAmount"))
+                OrderId = reader.IsDBNull(orderIdOrdinal) ? 0 : reader.GetInt32(orderIdOrdinal),
+                UserId = reader.IsDBNull(userIdOrdinal) ? 0 : reader.GetInt32(userIdOrdinal),
+                AddressId = reader.IsDBNull(addressIdOrdinal) ? 0 : reader.GetInt32(addressIdOrdinal),
+                PromotionId = reader.IsDBNull(promotionIdOrdinal) ? (int?)null : reader.GetInt32(promotionIdOrdinal),
+                OrderDate = reader.IsDBNull(orderDateOrdinal) ? DateTime.MinValue : reader.GetDateTime(orderDateOrdinal),
+                OrderStatus = reader.IsDBNull(orderStatusOrdinal) ? null : reader.GetString(orderStatusOrdinal),
+                TotalAmount = reader.IsDBNull(totalAmountOrdinal) ? 0m : reader.GetDecimal(totalAmountOrdinal),
+                ShippingFee = reader.IsDBNull(shippingFeeOrdinal) ? 0m : reader.GetDecimal(shippingFeeOrdinal),
+                FinalAmount = reader.IsDBNull(finalAmountOrdinal) ? 0m : reader.GetDecimal(finalAmountOrdinal)
             };
         }
 
         private static OrderItem MapOrderItem(SqlDataReader reader)
         {
+            var orderItemIdOrdinal = reader.GetOrdinal("OrderItemId");
+            var orderIdOrdinal = reader.GetOrdinal("OrderId");
+            var productIdOrdinal = reader.GetOrdinal("ProductId");
+            var quantityOrdinal = reader.GetOrdinal("Quantity");
+            var unitPriceOrdinal = reader.GetOrdinal("UnitPrice");
+            var discountAmountOrdinal = reader.GetOrdinal("DiscountAmount");
+            var lineTotalOrdinal = reader.GetOrdinal("LineTotal");
+
             return new OrderItem
             {
-                OrderItemId = reader.IsDBNull(reader.GetOrdinal("OrderItemId")) ? 0 : reader.GetInt32(reader.GetOrdinal("OrderItemId")),
-                OrderId = reader.IsDBNull(reader.GetOrdinal("OrderId")) ? 0 : reader.GetInt32(reader.GetOrdinal("OrderId")),
-                ProductId = reader.IsDBNull(reader.GetOrdinal("ProductId")) ? 0 : reader.GetInt32(reader.GetOrdinal("ProductId")),
-                Quantity = reader.IsDBNull(reader.GetOrdinal("Quantity")) ? 0 : reader.GetInt32(reader.GetOrdinal("Quantity")),
-                UnitPrice = reader.IsDBNull(reader.GetOrdinal("UnitPrice")) ? 0m : reader.GetDecimal(reader.GetOrdinal("UnitPrice")),
-                DiscountAmount = reader.IsDBNull(reader.GetOrdinal("DiscountAmount")) ? 0m : reader.GetDecimal(reader.GetOrdinal("DiscountAmount")),
-                LineTotal = reader.IsDBNull(reader.GetOrdinal("LineTotal")) ? 0m : reader.GetDecimal(reader.GetOrdinal("LineTotal"))
+                OrderItemId = reader.IsDBNull(orderItemIdOrdinal) ? 0 : reader.GetInt32(orderItemIdOrdinal),
+                OrderId = reader.IsDBNull(orderIdOrdinal) ? 0 : reader.GetInt32(orderIdOrdinal),
+                ProductId = reader.IsDBNull(productIdOrdinal) ? 0 : reader.GetInt32(productIdOrdinal),
+                Quantity = reader.IsDBNull(quantityOrdinal) ? 0 : reader.GetInt32(quantityOrdinal),
+                UnitPrice = reader.IsDBNull(unitPriceOrdinal) ? 0m : reader.GetDecimal(unitPriceOrdinal),
+                DiscountAmount = reader.IsDBNull(discountAmountOrdinal) ? 0m : reader.GetDecimal(discountAmountOrdinal),
+                LineTotal = reader.IsDBNull(lineTotalOrdinal) ? 0m : reader.GetDecimal(lineTotalOrdinal)
             };
         }
     }
