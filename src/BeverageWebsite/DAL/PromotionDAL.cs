@@ -51,7 +51,7 @@ namespace BeverageWebsite.DAL
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Failed to retrieve promotions. Details: {ex.Message}", ex);
+                throw new InvalidOperationException("Failed to retrieve promotions.", ex);
             }
 
             return promotions;
@@ -89,7 +89,7 @@ namespace BeverageWebsite.DAL
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Failed to retrieve promotion by identifier. Details: {ex.Message}", ex);
+                throw new InvalidOperationException("Failed to retrieve the promotion.", ex);
             }
 
             return null;
@@ -141,7 +141,7 @@ namespace BeverageWebsite.DAL
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Failed to retrieve promotion by code. Details: {ex.Message}", ex);
+                throw new InvalidOperationException("Failed to retrieve the promotion by code.", ex);
             }
 
             return null;
@@ -178,7 +178,7 @@ namespace BeverageWebsite.DAL
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Failed to retrieve active promotions. Details: {ex.Message}", ex);
+                throw new InvalidOperationException("Failed to retrieve active promotions.", ex);
             }
 
             return promotions;
@@ -206,14 +206,23 @@ namespace BeverageWebsite.DAL
                                      (@PromotionCode, @PromotionName, @DiscountType, @DiscountValue, @StartDate, @EndDate, @IsActive)";
             var parameters = CreateWriteParameters(promotion);
 
+            int affectedRows;
+
             try
             {
-                return _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
+                affectedRows = _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Failed to insert promotion. Details: {ex.Message}", ex);
+                throw new InvalidOperationException("Failed to insert the promotion.", ex);
             }
+
+            if (affectedRows != 1)
+            {
+                throw new InvalidOperationException("The promotion insert did not affect exactly one record.");
+            }
+
+            return affectedRows;
         }
 
         /// <summary>
@@ -251,14 +260,28 @@ namespace BeverageWebsite.DAL
             parameters[writeParameters.Length] =
                 new SqlParameter("@PromotionId", SqlDbType.Int) { Value = promotion.PromotionId };
 
+            int affectedRows;
+
             try
             {
-                return _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
+                affectedRows = _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Failed to update promotion. Details: {ex.Message}", ex);
+                throw new InvalidOperationException("Failed to update the promotion.", ex);
             }
+
+            if (affectedRows == 0)
+            {
+                throw new InvalidOperationException("The promotion was not found.");
+            }
+
+            if (affectedRows != 1)
+            {
+                throw new InvalidOperationException("The promotion update did not affect exactly one record.");
+            }
+
+            return affectedRows;
         }
 
         /// <summary>
@@ -279,14 +302,28 @@ namespace BeverageWebsite.DAL
                 new SqlParameter("@PromotionId", SqlDbType.Int) { Value = promotionId }
             };
 
+            int affectedRows;
+
             try
             {
-                return _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
+                affectedRows = _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Failed to delete promotion. Details: {ex.Message}", ex);
+                throw new InvalidOperationException("Failed to delete the promotion.", ex);
             }
+
+            if (affectedRows == 0)
+            {
+                throw new InvalidOperationException("The promotion was not found.");
+            }
+
+            if (affectedRows != 1)
+            {
+                throw new InvalidOperationException("The promotion delete did not affect exactly one record.");
+            }
+
+            return affectedRows;
         }
 
         private static Promotion MapPromotion(SqlDataReader reader)
