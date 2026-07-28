@@ -335,26 +335,28 @@ namespace BeverageWebsite.DAL
                 new SqlParameter("@PasswordHash", SqlDbType.NVarChar, 255) { Value = passwordHash }
             };
 
+            int affectedRows;
+
             try
             {
-                var affectedRows = _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
-
-                if (affectedRows == 0)
-                {
-                    throw new InvalidOperationException("The user does not exist.");
-                }
-
-                if (affectedRows != 1)
-                {
-                    throw new InvalidOperationException("The password hash could not be updated.");
-                }
-
-                return affectedRows;
+                affectedRows = _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
             }
             catch (Exception ex)
             {
                 throw new InvalidOperationException("Failed to update the password hash.", ex);
             }
+
+            if (affectedRows == 0)
+            {
+                throw new InvalidOperationException("The user does not exist.");
+            }
+
+            if (affectedRows != 1)
+            {
+                throw new InvalidOperationException("The password hash could not be updated.");
+            }
+
+            return affectedRows;
         }
 
         /// <summary>
