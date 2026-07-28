@@ -11,6 +11,13 @@ namespace BeverageWebsite.DAL
     /// </summary>
     public class AddressDAL
     {
+        private const int RecipientNameMaxLength = 200;
+        private const int PhoneMaxLength = 20;
+        private const int StreetMaxLength = 255;
+        private const int WardMaxLength = 100;
+        private const int DistrictMaxLength = 100;
+        private const int CityMaxLength = 100;
+
         private readonly DataProvider _dataProvider;
 
         /// <summary>
@@ -44,7 +51,7 @@ namespace BeverageWebsite.DAL
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Failed to retrieve addresses. Details: {ex.Message}", ex);
+                throw new InvalidOperationException("Failed to retrieve addresses.", ex);
             }
 
             return addresses;
@@ -57,10 +64,7 @@ namespace BeverageWebsite.DAL
         /// <returns>A list of the user's <see cref="Address"/> objects.</returns>
         public List<Address> GetByUserId(int userId)
         {
-            if (userId <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(userId), "User identifier must be greater than zero.");
-            }
+            ValidateIdentifier(userId, nameof(userId));
 
             var addresses = new List<Address>();
             const string sql = @"SELECT AddressId, UserId, RecipientName, Phone, Street, Ward, District, City, IsDefault
@@ -84,7 +88,7 @@ namespace BeverageWebsite.DAL
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Failed to retrieve addresses for user {userId}. Details: {ex.Message}", ex);
+                throw new InvalidOperationException("Failed to retrieve addresses for the user.", ex);
             }
 
             return addresses;
@@ -97,10 +101,7 @@ namespace BeverageWebsite.DAL
         /// <returns>An <see cref="Address"/> object if found; otherwise, null.</returns>
         public Address GetById(int addressId)
         {
-            if (addressId <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(addressId), "Address identifier must be greater than zero.");
-            }
+            ValidateIdentifier(addressId, nameof(addressId));
 
             const string sql = @"SELECT AddressId, UserId, RecipientName, Phone, Street, Ward, District, City, IsDefault
                                  FROM dbo.Address
@@ -122,7 +123,7 @@ namespace BeverageWebsite.DAL
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Failed to retrieve address by id {addressId}. Details: {ex.Message}", ex);
+                throw new InvalidOperationException("Failed to retrieve the address.", ex);
             }
 
             return null;
@@ -140,10 +141,32 @@ namespace BeverageWebsite.DAL
                 throw new ArgumentNullException(nameof(address));
             }
 
-            if (address.UserId <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(address.UserId), "User identifier must be greater than zero.");
-            }
+            ValidateIdentifier(address.UserId, nameof(address.UserId));
+
+            var recipientName = NormalizeRequiredString(
+                address.RecipientName,
+                RecipientNameMaxLength,
+                nameof(address.RecipientName));
+            var phone = NormalizeRequiredString(
+                address.Phone,
+                PhoneMaxLength,
+                nameof(address.Phone));
+            var street = NormalizeRequiredString(
+                address.Street,
+                StreetMaxLength,
+                nameof(address.Street));
+            var ward = NormalizeOptionalString(
+                address.Ward,
+                WardMaxLength,
+                nameof(address.Ward));
+            var district = NormalizeOptionalString(
+                address.District,
+                DistrictMaxLength,
+                nameof(address.District));
+            var city = NormalizeRequiredString(
+                address.City,
+                CityMaxLength,
+                nameof(address.City));
 
             const string sql = @"INSERT INTO dbo.Address
                                      (UserId, RecipientName, Phone, Street, Ward, District, City, IsDefault)
@@ -152,29 +175,38 @@ namespace BeverageWebsite.DAL
             var parameters = new[]
             {
                 new SqlParameter("@UserId", SqlDbType.Int) { Value = address.UserId },
-                new SqlParameter("@RecipientName", SqlDbType.NVarChar, 200) { Value = address.RecipientName ?? string.Empty },
-                new SqlParameter("@Phone", SqlDbType.NVarChar, 20) { Value = address.Phone ?? string.Empty },
-                new SqlParameter("@Street", SqlDbType.NVarChar, 255) { Value = address.Street ?? string.Empty },
-                new SqlParameter("@Ward", SqlDbType.NVarChar, 100) { Value = (object)address.Ward ?? DBNull.Value },
-                new SqlParameter("@District", SqlDbType.NVarChar, 100) { Value = (object)address.District ?? DBNull.Value },
-                new SqlParameter("@City", SqlDbType.NVarChar, 100) { Value = address.City ?? string.Empty },
+                new SqlParameter("@RecipientName", SqlDbType.NVarChar, RecipientNameMaxLength) { Value = recipientName },
+                new SqlParameter("@Phone", SqlDbType.NVarChar, PhoneMaxLength) { Value = phone },
+                new SqlParameter("@Street", SqlDbType.NVarChar, StreetMaxLength) { Value = street },
+                new SqlParameter("@Ward", SqlDbType.NVarChar, WardMaxLength) { Value = (object)ward ?? DBNull.Value },
+                new SqlParameter("@District", SqlDbType.NVarChar, DistrictMaxLength) { Value = (object)district ?? DBNull.Value },
+                new SqlParameter("@City", SqlDbType.NVarChar, CityMaxLength) { Value = city },
                 new SqlParameter("@IsDefault", SqlDbType.Bit) { Value = address.IsDefault }
             };
 
+            int affectedRows;
+
             try
             {
-                return _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
+                affectedRows = _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException("Failed to insert address. Details: " + ex.Message, ex);
+                throw new InvalidOperationException("Failed to insert the address.", ex);
             }
+
+            if (affectedRows != 1)
+            {
+                throw new InvalidOperationException("The address insert did not affect exactly one record.");
+            }
+
+            return affectedRows;
         }
 
         /// <summary>
-        /// Updates an existing address in the database.
+        /// Updates an existing address while preserving its user ownership.
         /// </summary>
-        /// <param name="address">The address to update.</param>
+        /// <param name="address">The address data, including its identifier and owning user identifier.</param>
         /// <returns>The number of rows affected.</returns>
         public int Update(Address address)
         {
@@ -183,15 +215,33 @@ namespace BeverageWebsite.DAL
                 throw new ArgumentNullException(nameof(address));
             }
 
-            if (address.AddressId <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(address.AddressId), "Address identifier must be greater than zero.");
-            }
+            ValidateIdentifier(address.AddressId, nameof(address.AddressId));
+            ValidateIdentifier(address.UserId, nameof(address.UserId));
 
-            if (address.UserId <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(address.UserId), "User identifier must be greater than zero.");
-            }
+            var recipientName = NormalizeRequiredString(
+                address.RecipientName,
+                RecipientNameMaxLength,
+                nameof(address.RecipientName));
+            var phone = NormalizeRequiredString(
+                address.Phone,
+                PhoneMaxLength,
+                nameof(address.Phone));
+            var street = NormalizeRequiredString(
+                address.Street,
+                StreetMaxLength,
+                nameof(address.Street));
+            var ward = NormalizeOptionalString(
+                address.Ward,
+                WardMaxLength,
+                nameof(address.Ward));
+            var district = NormalizeOptionalString(
+                address.District,
+                DistrictMaxLength,
+                nameof(address.District));
+            var city = NormalizeRequiredString(
+                address.City,
+                CityMaxLength,
+                nameof(address.City));
 
             const string sql = @"UPDATE dbo.Address
                                  SET RecipientName = @RecipientName,
@@ -207,66 +257,148 @@ namespace BeverageWebsite.DAL
             {
                 new SqlParameter("@AddressId", SqlDbType.Int) { Value = address.AddressId },
                 new SqlParameter("@UserId", SqlDbType.Int) { Value = address.UserId },
-                new SqlParameter("@RecipientName", SqlDbType.NVarChar, 200) { Value = address.RecipientName ?? string.Empty },
-                new SqlParameter("@Phone", SqlDbType.NVarChar, 20) { Value = address.Phone ?? string.Empty },
-                new SqlParameter("@Street", SqlDbType.NVarChar, 255) { Value = address.Street ?? string.Empty },
-                new SqlParameter("@Ward", SqlDbType.NVarChar, 100) { Value = (object)address.Ward ?? DBNull.Value },
-                new SqlParameter("@District", SqlDbType.NVarChar, 100) { Value = (object)address.District ?? DBNull.Value },
-                new SqlParameter("@City", SqlDbType.NVarChar, 100) { Value = address.City ?? string.Empty },
+                new SqlParameter("@RecipientName", SqlDbType.NVarChar, RecipientNameMaxLength) { Value = recipientName },
+                new SqlParameter("@Phone", SqlDbType.NVarChar, PhoneMaxLength) { Value = phone },
+                new SqlParameter("@Street", SqlDbType.NVarChar, StreetMaxLength) { Value = street },
+                new SqlParameter("@Ward", SqlDbType.NVarChar, WardMaxLength) { Value = (object)ward ?? DBNull.Value },
+                new SqlParameter("@District", SqlDbType.NVarChar, DistrictMaxLength) { Value = (object)district ?? DBNull.Value },
+                new SqlParameter("@City", SqlDbType.NVarChar, CityMaxLength) { Value = city },
                 new SqlParameter("@IsDefault", SqlDbType.Bit) { Value = address.IsDefault }
             };
 
+            int affectedRows;
+
             try
             {
-                return _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
+                affectedRows = _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException("Failed to update address. Details: " + ex.Message, ex);
+                throw new InvalidOperationException("Failed to update the address.", ex);
             }
+
+            if (affectedRows == 0)
+            {
+                throw new InvalidOperationException("The address was not found or is not owned by the user.");
+            }
+
+            if (affectedRows != 1)
+            {
+                throw new InvalidOperationException("The address update did not affect exactly one record.");
+            }
+
+            return affectedRows;
         }
 
         /// <summary>
-        /// Deletes an address by its identifier.
+        /// Deletes an address owned by the specified user.
         /// </summary>
+        /// <param name="userId">The identifier of the user who owns the address.</param>
         /// <param name="addressId">The address identifier.</param>
         /// <returns>The number of rows affected.</returns>
-        public int Delete(int addressId)
+        public int Delete(int userId, int addressId)
         {
-            if (addressId <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(addressId), "Address identifier must be greater than zero.");
-            }
+            ValidateIdentifier(userId, nameof(userId));
+            ValidateIdentifier(addressId, nameof(addressId));
 
-            const string sql = @"DELETE FROM dbo.Address WHERE AddressId = @AddressId";
+            const string sql = @"DELETE FROM dbo.Address
+                                 WHERE AddressId = @AddressId
+                                   AND UserId = @UserId";
             var parameters = new[]
             {
-                new SqlParameter("@AddressId", SqlDbType.Int) { Value = addressId }
+                new SqlParameter("@AddressId", SqlDbType.Int) { Value = addressId },
+                new SqlParameter("@UserId", SqlDbType.Int) { Value = userId }
             };
+
+            int affectedRows;
 
             try
             {
-                return _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
+                affectedRows = _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Failed to delete address {addressId}. Details: {ex.Message}", ex);
+                throw new InvalidOperationException("Failed to delete the address.", ex);
             }
+
+            if (affectedRows == 0)
+            {
+                throw new InvalidOperationException("The address was not found or is not owned by the user.");
+            }
+
+            if (affectedRows != 1)
+            {
+                throw new InvalidOperationException("The address delete did not affect exactly one record.");
+            }
+
+            return affectedRows;
+        }
+
+        private static void ValidateIdentifier(int value, string parameterName)
+        {
+            if (value <= 0)
+            {
+                throw new ArgumentOutOfRangeException(parameterName, "The identifier must be greater than zero.");
+            }
+        }
+
+        private static string NormalizeRequiredString(string value, int maxLength, string parameterName)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                throw new ArgumentException("A required address value must be provided.", parameterName);
+            }
+
+            var normalizedValue = value.Trim();
+
+            if (normalizedValue.Length > maxLength)
+            {
+                throw new ArgumentException("An address value exceeds the allowed maximum length.", parameterName);
+            }
+
+            return normalizedValue;
+        }
+
+        private static string NormalizeOptionalString(string value, int maxLength, string parameterName)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return null;
+            }
+
+            var normalizedValue = value.Trim();
+
+            if (normalizedValue.Length > maxLength)
+            {
+                throw new ArgumentException("An address value exceeds the allowed maximum length.", parameterName);
+            }
+
+            return normalizedValue;
         }
 
         private static Address MapAddress(SqlDataReader reader)
         {
+            var addressIdOrdinal = reader.GetOrdinal("AddressId");
+            var userIdOrdinal = reader.GetOrdinal("UserId");
+            var recipientNameOrdinal = reader.GetOrdinal("RecipientName");
+            var phoneOrdinal = reader.GetOrdinal("Phone");
+            var streetOrdinal = reader.GetOrdinal("Street");
+            var wardOrdinal = reader.GetOrdinal("Ward");
+            var districtOrdinal = reader.GetOrdinal("District");
+            var cityOrdinal = reader.GetOrdinal("City");
+            var isDefaultOrdinal = reader.GetOrdinal("IsDefault");
+
             return new Address
             {
-                AddressId = reader.IsDBNull(reader.GetOrdinal("AddressId")) ? 0 : reader.GetInt32(reader.GetOrdinal("AddressId")),
-                UserId = reader.IsDBNull(reader.GetOrdinal("UserId")) ? 0 : reader.GetInt32(reader.GetOrdinal("UserId")),
-                RecipientName = reader.IsDBNull(reader.GetOrdinal("RecipientName")) ? null : reader.GetString(reader.GetOrdinal("RecipientName")),
-                Phone = reader.IsDBNull(reader.GetOrdinal("Phone")) ? null : reader.GetString(reader.GetOrdinal("Phone")),
-                Street = reader.IsDBNull(reader.GetOrdinal("Street")) ? null : reader.GetString(reader.GetOrdinal("Street")),
-                Ward = reader.IsDBNull(reader.GetOrdinal("Ward")) ? null : reader.GetString(reader.GetOrdinal("Ward")),
-                District = reader.IsDBNull(reader.GetOrdinal("District")) ? null : reader.GetString(reader.GetOrdinal("District")),
-                City = reader.IsDBNull(reader.GetOrdinal("City")) ? null : reader.GetString(reader.GetOrdinal("City")),
-                IsDefault = reader.IsDBNull(reader.GetOrdinal("IsDefault")) ? false : reader.GetBoolean(reader.GetOrdinal("IsDefault"))
+                AddressId = reader.IsDBNull(addressIdOrdinal) ? 0 : reader.GetInt32(addressIdOrdinal),
+                UserId = reader.IsDBNull(userIdOrdinal) ? 0 : reader.GetInt32(userIdOrdinal),
+                RecipientName = reader.IsDBNull(recipientNameOrdinal) ? null : reader.GetString(recipientNameOrdinal),
+                Phone = reader.IsDBNull(phoneOrdinal) ? null : reader.GetString(phoneOrdinal),
+                Street = reader.IsDBNull(streetOrdinal) ? null : reader.GetString(streetOrdinal),
+                Ward = reader.IsDBNull(wardOrdinal) ? null : reader.GetString(wardOrdinal),
+                District = reader.IsDBNull(districtOrdinal) ? null : reader.GetString(districtOrdinal),
+                City = reader.IsDBNull(cityOrdinal) ? null : reader.GetString(cityOrdinal),
+                IsDefault = reader.IsDBNull(isDefaultOrdinal) ? false : reader.GetBoolean(isDefaultOrdinal)
             };
         }
     }
