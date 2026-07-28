@@ -203,14 +203,28 @@ namespace BeverageWebsite.DAL
                 new SqlParameter("@CategoryId", SqlDbType.Int) { Value = id }
             };
 
+            int affectedRows;
+
             try
             {
-                return _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
+                affectedRows = _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
             }
             catch (Exception ex)
             {
                 throw new InvalidOperationException("Failed to delete the category.", ex);
             }
+
+            if (affectedRows == 0)
+            {
+                throw new InvalidOperationException("The category was not found.");
+            }
+
+            if (affectedRows != 1)
+            {
+                throw new InvalidOperationException("The category delete did not affect exactly one record.");
+            }
+
+            return affectedRows;
         }
 
         private static Category MapCategory(SqlDataReader reader)
