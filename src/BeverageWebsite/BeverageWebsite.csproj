@@ -68,6 +68,7 @@
     <Compile Include="BLL\CartBLL.cs" />
     <Compile Include="BLL\CategoryBLL.cs" />
     <Compile Include="BLL\InventoryBLL.cs" />
+    <Compile Include="BLL\OrderBLL.cs" />
     <Compile Include="BLL\ProductBLL.cs" />
     <Compile Include="BLL\PromotionBLL.cs" />
     <Compile Include="BLL\UserBLL.cs" />
