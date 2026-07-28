@@ -21,7 +21,7 @@ namespace BeverageWebsite.DAL
 
             if (string.IsNullOrWhiteSpace(_connectionString))
             {
-                throw new ConfigurationErrorsException("Connection string 'BeverageWebsiteDbConnection' was not found in the application configuration.");
+                throw new ConfigurationErrorsException("The database connection configuration is unavailable.");
             }
         }
 
@@ -92,7 +92,7 @@ namespace BeverageWebsite.DAL
             catch (Exception ex)
             {
                 throw new InvalidOperationException(
-                    $"Failed to execute transaction. Details: {ex.Message}",
+                    "The database transaction failed.",
                     ex);
             }
         }
@@ -124,7 +124,7 @@ namespace BeverageWebsite.DAL
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Failed to execute non-query command. Details: {ex.Message}", ex);
+                throw new InvalidOperationException("Failed to execute the database command.", ex);
             }
         }
 
@@ -155,7 +155,7 @@ namespace BeverageWebsite.DAL
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Failed to execute scalar command. Details: {ex.Message}", ex);
+                throw new InvalidOperationException("Failed to execute the scalar database command.", ex);
             }
         }
 
@@ -186,7 +186,7 @@ namespace BeverageWebsite.DAL
             catch (Exception ex)
             {
                 connection.Dispose();
-                throw new InvalidOperationException($"Failed to execute reader command. Details: {ex.Message}", ex);
+                throw new InvalidOperationException("Failed to execute the database reader command.", ex);
             }
         }
 
@@ -220,7 +220,7 @@ namespace BeverageWebsite.DAL
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Failed to execute data table command. Details: {ex.Message}", ex);
+                throw new InvalidOperationException("Failed to load the database result table.", ex);
             }
 
             return dataTable;
