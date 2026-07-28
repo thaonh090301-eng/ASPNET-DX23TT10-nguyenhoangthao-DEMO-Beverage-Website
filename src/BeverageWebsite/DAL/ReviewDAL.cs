@@ -236,14 +236,23 @@ namespace BeverageWebsite.DAL
                                      (@UserId, @ProductId, @Rating, @Comment)";
             var parameters = CreateWriteParameters(review);
 
+            int affectedRows;
+
             try
             {
-                return _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
+                affectedRows = _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
             }
             catch (Exception ex)
             {
                 throw new InvalidOperationException("Failed to insert review.", ex);
             }
+
+            if (affectedRows != 1)
+            {
+                throw new InvalidOperationException("The review insert did not affect exactly one record.");
+            }
+
+            return affectedRows;
         }
 
         /// <summary>
@@ -278,14 +287,29 @@ namespace BeverageWebsite.DAL
             parameters[writeParameters.Length] =
                 new SqlParameter("@ReviewId", SqlDbType.Int) { Value = review.ReviewId };
 
+            int affectedRows;
+
             try
             {
-                return _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
+                affectedRows = _dataProvider.ExecuteNonQuery(sql, CommandType.Text, parameters);
             }
             catch (Exception ex)
             {
                 throw new InvalidOperationException("Failed to update review.", ex);
             }
+
+            if (affectedRows == 0)
+            {
+                throw new InvalidOperationException(
+                    "The review was not found or does not match the expected owner and product.");
+            }
+
+            if (affectedRows != 1)
+            {
+                throw new InvalidOperationException("The review update did not affect exactly one record.");
+            }
+
+            return affectedRows;
         }
 
         /// <summary>
