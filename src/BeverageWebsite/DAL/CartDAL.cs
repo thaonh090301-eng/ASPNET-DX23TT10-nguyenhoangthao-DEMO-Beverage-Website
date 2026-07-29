@@ -180,17 +180,18 @@ namespace BeverageWebsite.DAL
 
                         if (productPrice == null || productPrice == DBNull.Value)
                         {
-                            throw new InvalidOperationException("The product does not exist or is inactive.");
+                            throw new CartValidationException(
+                                "The product does not exist or is inactive.");
                         }
 
                         unitPrice = Convert.ToDecimal(productPrice);
                     }
 
-                    const string cartItemSql = @"SELECT CI.CartItemId
+                    const string cartItemSql = @"SELECT CI.Quantity
                                                  FROM dbo.CartItem CI WITH (UPDLOCK, HOLDLOCK)
                                                  WHERE CI.CartId = @CartId
                                                    AND CI.ProductId = @ProductId";
-                    object cartItemId;
+                    object existingQuantityValue;
 
                     using (var cartItemCommand = new SqlCommand(cartItemSql, connection, transaction))
                     {
@@ -198,10 +199,35 @@ namespace BeverageWebsite.DAL
                             new SqlParameter("@CartId", SqlDbType.Int) { Value = cartId });
                         cartItemCommand.Parameters.Add(
                             new SqlParameter("@ProductId", SqlDbType.Int) { Value = productId });
-                        cartItemId = cartItemCommand.ExecuteScalar();
+                        existingQuantityValue = cartItemCommand.ExecuteScalar();
                     }
 
-                    if (cartItemId != null && cartItemId != DBNull.Value)
+                    if (existingQuantityValue == DBNull.Value)
+                    {
+                        throw new CartValidationException(
+                            "The cart item quantity is unavailable.");
+                    }
+
+                    var hasExistingItem = existingQuantityValue != null;
+                    var existingQuantity = hasExistingItem
+                        ? Convert.ToInt32(existingQuantityValue)
+                        : 0;
+
+                    if (hasExistingItem && existingQuantity <= 0)
+                    {
+                        throw new CartValidationException(
+                            "The cart item quantity is unavailable.");
+                    }
+
+                    var finalQuantity = (long)existingQuantity + quantity;
+                    var stockQuantity = GetLockedStockQuantity(
+                        connection,
+                        transaction,
+                        productId);
+
+                    ValidateStockAvailability(stockQuantity, finalQuantity);
+
+                    if (hasExistingItem)
                     {
                         const string updateSql = @"UPDATE dbo.CartItem
                                                    SET Quantity = Quantity + @Quantity,
@@ -270,6 +296,13 @@ namespace BeverageWebsite.DAL
             }
             catch (Exception ex)
             {
+                var validationException = FindCartValidationException(ex);
+
+                if (validationException != null)
+                {
+                    throw new InvalidOperationException(validationException.Message);
+                }
+
                 throw new InvalidOperationException("Failed to add item to cart.", ex);
             }
         }
@@ -310,6 +343,35 @@ namespace BeverageWebsite.DAL
                 {
                     ValidateCartOwnership(connection, transaction, cartId, userId);
 
+                    const string cartItemSql = @"SELECT CI.ProductId
+                                                 FROM dbo.CartItem CI WITH (UPDLOCK, HOLDLOCK)
+                                                 WHERE CI.CartItemId = @CartItemId
+                                                   AND CI.CartId = @CartId";
+                    object productIdValue;
+
+                    using (var cartItemCommand = new SqlCommand(cartItemSql, connection, transaction))
+                    {
+                        cartItemCommand.Parameters.Add(
+                            new SqlParameter("@CartItemId", SqlDbType.Int) { Value = cartItemId });
+                        cartItemCommand.Parameters.Add(
+                            new SqlParameter("@CartId", SqlDbType.Int) { Value = cartId });
+                        productIdValue = cartItemCommand.ExecuteScalar();
+                    }
+
+                    if (productIdValue == null || productIdValue == DBNull.Value)
+                    {
+                        throw new CartValidationException(
+                            "The cart item does not exist in the specified cart.");
+                    }
+
+                    var productId = Convert.ToInt32(productIdValue);
+                    var stockQuantity = GetLockedStockQuantity(
+                        connection,
+                        transaction,
+                        productId);
+
+                    ValidateStockAvailability(stockQuantity, quantity);
+
                     const string sql = @"UPDATE dbo.CartItem
                                          SET Quantity = @Quantity
                                          WHERE CartItemId = @CartItemId
@@ -328,7 +390,8 @@ namespace BeverageWebsite.DAL
 
                         if (affectedRows == 0)
                         {
-                            throw new InvalidOperationException("The cart item does not exist in the specified cart.");
+                            throw new CartValidationException(
+                                "The cart item does not exist in the specified cart.");
                         }
 
                         if (affectedRows != 1)
@@ -342,6 +405,13 @@ namespace BeverageWebsite.DAL
             }
             catch (Exception ex)
             {
+                var validationException = FindCartValidationException(ex);
+
+                if (validationException != null)
+                {
+                    throw new InvalidOperationException(validationException.Message);
+                }
+
                 throw new InvalidOperationException("Failed to update the cart item quantity.", ex);
             }
         }
@@ -515,6 +585,69 @@ namespace BeverageWebsite.DAL
             }
         }
 
+        private static int GetLockedStockQuantity(
+            SqlConnection connection,
+            SqlTransaction transaction,
+            int productId)
+        {
+            const string sql = @"SELECT I.StockQuantity
+                                 FROM dbo.Inventory I WITH (UPDLOCK, HOLDLOCK)
+                                 WHERE I.ProductId = @ProductId";
+
+            using (var command = new SqlCommand(sql, connection, transaction))
+            {
+                command.Parameters.Add(
+                    new SqlParameter("@ProductId", SqlDbType.Int) { Value = productId });
+
+                var stockQuantityValue = command.ExecuteScalar();
+
+                if (stockQuantityValue == null || stockQuantityValue == DBNull.Value)
+                {
+                    throw new CartValidationException(
+                        "Không thể xác định tồn kho hiện có.");
+                }
+
+                var stockQuantity = Convert.ToInt32(stockQuantityValue);
+
+                if (stockQuantity < 0)
+                {
+                    throw new CartValidationException(
+                        "Không thể xác định tồn kho hiện có.");
+                }
+
+                return stockQuantity;
+            }
+        }
+
+        private static void ValidateStockAvailability(
+            int stockQuantity,
+            long finalQuantity)
+        {
+            if (finalQuantity > stockQuantity)
+            {
+                throw new CartValidationException(
+                    "Số lượng yêu cầu vượt quá tồn kho hiện có.");
+            }
+        }
+
+        private static CartValidationException FindCartValidationException(
+            Exception exception)
+        {
+            while (exception != null)
+            {
+                var validationException = exception as CartValidationException;
+
+                if (validationException != null)
+                {
+                    return validationException;
+                }
+
+                exception = exception.InnerException;
+            }
+
+            return null;
+        }
+
         private static void ValidateCartOwnership(
             SqlConnection connection,
             SqlTransaction transaction,
@@ -535,8 +668,17 @@ namespace BeverageWebsite.DAL
 
                 if (command.ExecuteScalar() == null)
                 {
-                    throw new InvalidOperationException("The cart does not exist or is not available to the specified user.");
+                    throw new CartValidationException(
+                        "The cart does not exist or is not available to the specified user.");
                 }
+            }
+        }
+
+        private sealed class CartValidationException : Exception
+        {
+            public CartValidationException(string message)
+                : base(message)
+            {
             }
         }
 
