@@ -156,6 +156,35 @@ namespace BeverageWebsite.Controllers
         }
 
         /// <summary>
+        /// Displays the authenticated user's read-only profile.
+        /// Signs out stale or inactive identities.
+        /// </summary>
+        /// <returns>The profile view for a valid active user; otherwise, the login page.</returns>
+        [Authorize]
+        [HttpGet]
+        [ActionName("Profile")]
+        public ActionResult UserProfile()
+        {
+            var authenticatedEmail = User.Identity.Name;
+
+            if (string.IsNullOrWhiteSpace(authenticatedEmail))
+            {
+                FormsAuthentication.SignOut();
+                return RedirectToAction("Login", "Account");
+            }
+
+            var user = _userBll.GetByEmail(authenticatedEmail);
+
+            if (user == null || !user.IsActive)
+            {
+                FormsAuthentication.SignOut();
+                return RedirectToAction("Login", "Account");
+            }
+
+            return View(user);
+        }
+
+        /// <summary>
         /// Signs out the authenticated user through a protected POST request.
         /// </summary>
         /// <returns>A redirect to the public home page.</returns>
