@@ -43,14 +43,16 @@ namespace BeverageWebsite.BLL
         }
 
         /// <summary>
-        /// Retrieves all items in a cart.
+        /// Retrieves all items in a user-owned cart.
         /// </summary>
+        /// <param name="userId">The identifier of the user who owns the cart.</param>
         /// <param name="cartId">The cart identifier.</param>
         /// <returns>The cart items returned by the data access layer.</returns>
-        public List<CartItem> GetCartItems(int cartId)
+        public List<CartItem> GetCartItems(int userId, int cartId)
         {
+            ValidateIdentifier(userId, nameof(userId));
             ValidateIdentifier(cartId, nameof(cartId));
-            return _cartDal.GetCartItems(cartId);
+            return _cartDal.GetCartItems(userId, cartId);
         }
 
         /// <summary>
@@ -121,25 +123,29 @@ namespace BeverageWebsite.BLL
         }
 
         /// <summary>
-        /// Retrieves the total monetary value of a cart.
+        /// Retrieves the total monetary value of a user-owned cart.
         /// </summary>
+        /// <param name="userId">The identifier of the user who owns the cart.</param>
         /// <param name="cartId">The cart identifier.</param>
         /// <returns>The total calculated by the data access layer.</returns>
-        public decimal GetCartTotal(int cartId)
+        public decimal GetCartTotal(int userId, int cartId)
         {
+            ValidateIdentifier(userId, nameof(userId));
             ValidateIdentifier(cartId, nameof(cartId));
-            return _cartDal.GetCartTotal(cartId);
+            return _cartDal.GetCartTotal(userId, cartId);
         }
 
         /// <summary>
-        /// Retrieves the sum of item quantities in a cart.
+        /// Retrieves the sum of item quantities in a user-owned cart.
         /// </summary>
+        /// <param name="userId">The identifier of the user who owns the cart.</param>
         /// <param name="cartId">The cart identifier.</param>
         /// <returns>The total item quantity calculated by the data access layer.</returns>
-        public int GetTotalItems(int cartId)
+        public int GetTotalItems(int userId, int cartId)
         {
+            ValidateIdentifier(userId, nameof(userId));
             ValidateIdentifier(cartId, nameof(cartId));
-            return _cartDal.GetTotalItems(cartId);
+            return _cartDal.GetTotalItems(userId, cartId);
         }
 
         private static void ValidateIdentifier(int value, string parameterName)

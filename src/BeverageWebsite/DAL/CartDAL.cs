@@ -93,21 +93,26 @@ namespace BeverageWebsite.DAL
         }
 
         /// <summary>
-        /// Retrieves all items in the specified cart.
+        /// Retrieves all items in the specified user-owned cart.
         /// </summary>
+        /// <param name="userId">The identifier of the user who owns the cart.</param>
         /// <param name="cartId">The cart identifier.</param>
         /// <returns>A list of <see cref="CartItem"/> objects.</returns>
-        public List<CartItem> GetCartItems(int cartId)
+        public List<CartItem> GetCartItems(int userId, int cartId)
         {
+            ValidateIdentifier(userId, nameof(userId));
             ValidateIdentifier(cartId, nameof(cartId));
 
             var items = new List<CartItem>();
             const string sql = @"SELECT CI.CartItemId, CI.CartId, CI.ProductId, CI.Quantity, CI.UnitPrice
                                  FROM dbo.CartItem CI
+                                 INNER JOIN dbo.Cart C ON C.CartId = CI.CartId
                                  WHERE CI.CartId = @CartId
+                                   AND C.UserId = @UserId
                                  ORDER BY CI.CartItemId";
             var parameters = new[]
             {
+                new SqlParameter("@UserId", SqlDbType.Int) { Value = userId },
                 new SqlParameter("@CartId", SqlDbType.Int) { Value = cartId }
             };
 
@@ -522,21 +527,26 @@ namespace BeverageWebsite.DAL
         }
 
         /// <summary>
-        /// Retrieves the total amount of the cart.
+        /// Retrieves the total amount of the specified user-owned cart.
         /// </summary>
+        /// <param name="userId">The identifier of the user who owns the cart.</param>
         /// <param name="cartId">The cart identifier.</param>
         /// <returns>The total amount of the cart.</returns>
-        public decimal GetCartTotal(int cartId)
+        public decimal GetCartTotal(int userId, int cartId)
         {
+            ValidateIdentifier(userId, nameof(userId));
             ValidateIdentifier(cartId, nameof(cartId));
 
             const string sql = @"SELECT CAST(
                                      ISNULL(SUM(CI.Quantity * CI.UnitPrice), 0)
                                      AS DECIMAL(12,2))
                                  FROM dbo.CartItem AS CI
-                                 WHERE CI.CartId = @CartId";
+                                 INNER JOIN dbo.Cart AS C ON C.CartId = CI.CartId
+                                 WHERE CI.CartId = @CartId
+                                   AND C.UserId = @UserId";
             var parameters = new[]
             {
+                new SqlParameter("@UserId", SqlDbType.Int) { Value = userId },
                 new SqlParameter("@CartId", SqlDbType.Int) { Value = cartId }
             };
 
@@ -552,17 +562,24 @@ namespace BeverageWebsite.DAL
         }
 
         /// <summary>
-        /// Retrieves the total number of items in the cart.
+        /// Retrieves the total number of items in the specified user-owned cart.
         /// </summary>
+        /// <param name="userId">The identifier of the user who owns the cart.</param>
         /// <param name="cartId">The cart identifier.</param>
         /// <returns>The total number of items in the cart.</returns>
-        public int GetTotalItems(int cartId)
+        public int GetTotalItems(int userId, int cartId)
         {
+            ValidateIdentifier(userId, nameof(userId));
             ValidateIdentifier(cartId, nameof(cartId));
 
-            const string sql = @"SELECT ISNULL(SUM(CI.Quantity), 0) FROM dbo.CartItem CI WHERE CI.CartId = @CartId";
+            const string sql = @"SELECT ISNULL(SUM(CI.Quantity), 0)
+                                 FROM dbo.CartItem CI
+                                 INNER JOIN dbo.Cart C ON C.CartId = CI.CartId
+                                 WHERE CI.CartId = @CartId
+                                   AND C.UserId = @UserId";
             var parameters = new[]
             {
+                new SqlParameter("@UserId", SqlDbType.Int) { Value = userId },
                 new SqlParameter("@CartId", SqlDbType.Int) { Value = cartId }
             };
 
