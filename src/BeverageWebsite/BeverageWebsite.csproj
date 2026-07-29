@@ -64,6 +64,7 @@
     <Compile Include="App_Start\RouteConfig.cs" />
     <Compile Include="Global.asax.cs" />
     <Compile Include="Controllers\HomeController.cs" />
+    <Compile Include="Controllers\CategoryController.cs" />
     <Compile Include="BLL\AddressBLL.cs" />
     <Compile Include="BLL\CartBLL.cs" />
     <Compile Include="BLL\CategoryBLL.cs" />
