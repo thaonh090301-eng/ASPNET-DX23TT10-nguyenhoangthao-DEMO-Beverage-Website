@@ -1,5 +1,50 @@
 @{
-    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewBag.Title = "Trang chủ";
 }
 
-<div>Beverage Website Development Environment Ready</div>
+<main>
+    <section class="jumbotron">
+        <h1>Chào mừng đến với Beverage Website</h1>
+        <p class="lead">
+            Khám phá các danh mục đồ uống và thông tin sản phẩm trong danh mục
+            công khai của chúng tôi.
+        </p>
+        <p>
+            Mỗi sản phẩm có thể kèm theo hình ảnh minh họa khi thông tin ảnh
+            được cung cấp.
+        </p>
+        <p>
+            @Html.ActionLink(
+                "Khám phá danh mục",
+                "Index",
+                "Category",
+                null,
+                new { @class = "btn btn-primary" })
+            @Html.ActionLink(
+                "Xem sản phẩm",
+                "Index",
+                "Product",
+                null,
+                new { @class = "btn btn-default" })
+        </p>
+    </section>
+
+    <section>
+        <h2>Tính năng danh mục công khai</h2>
+        <div class="row">
+            <div class="col-md-6">
+                <ul>
+                    <li>Xem danh mục đồ uống</li>
+                    <li>Xem danh sách và chi tiết sản phẩm</li>
+                    <li>Tìm kiếm sản phẩm theo tên hoặc mô tả</li>
+                </ul>
+            </div>
+            <div class="col-md-6">
+                <ul>
+                    <li>Lọc sản phẩm theo danh mục</li>
+                    <li>Xem hình ảnh minh họa khi sản phẩm có ImageUrl</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+</main>
