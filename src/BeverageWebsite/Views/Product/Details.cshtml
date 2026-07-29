@@ -1,0 +1,50 @@
+@model BeverageWebsite.Models.Product
+
+@{
+    ViewBag.Title = "Chi tiết sản phẩm";
+}
+
+<main>
+    <h1>Chi tiết sản phẩm</h1>
+
+    <dl class="dl-horizontal">
+        <dt>Ảnh</dt>
+        <dd>
+            @if (string.IsNullOrWhiteSpace(Model.ImageUrl))
+            {
+                <span>Chưa có ảnh</span>
+            }
+            else
+            {
+                <img src="@Url.Content(Model.ImageUrl)"
+                     alt="@Model.ProductName"
+                     class="img-responsive" />
+            }
+        </dd>
+
+        <dt>Tên sản phẩm</dt>
+        <dd>@Model.ProductName</dd>
+
+        <dt>Mô tả</dt>
+        <dd>
+            @(string.IsNullOrWhiteSpace(Model.Description)
+                ? "Không có mô tả."
+                : Model.Description)
+        </dd>
+
+        <dt>Giá</dt>
+        <dd>@Model.Price.ToString("N0") ₫</dd>
+
+        <dt>Trạng thái</dt>
+        <dd>@(Model.IsActive ? "Hoạt động" : "Không hoạt động")</dd>
+    </dl>
+
+    <p>
+        @Html.ActionLink(
+            "Quay lại danh sách",
+            "Index",
+            "Product",
+            null,
+            new { @class = "btn btn-default" })
+    </p>
+</main>
