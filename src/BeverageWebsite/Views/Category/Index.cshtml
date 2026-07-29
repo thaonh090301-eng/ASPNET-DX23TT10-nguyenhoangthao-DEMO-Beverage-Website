@@ -42,6 +42,12 @@
                                     "Category",
                                     new { id = category.CategoryId },
                                     new { @class = "btn btn-default btn-sm" })
+                                @Html.ActionLink(
+                                    "Xem sản phẩm",
+                                    "Index",
+                                    "Product",
+                                    new { categoryId = category.CategoryId },
+                                    new { @class = "btn btn-primary btn-sm" })
                             </td>
                         </tr>
                     }

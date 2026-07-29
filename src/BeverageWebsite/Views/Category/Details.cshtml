@@ -24,6 +24,12 @@
 
     <p>
         @Html.ActionLink(
+            "Xem sản phẩm thuộc danh mục",
+            "Index",
+            "Product",
+            new { categoryId = Model.CategoryId },
+            new { @class = "btn btn-primary" })
+        @Html.ActionLink(
             "Quay lại danh sách",
             "Index",
             "Category",
