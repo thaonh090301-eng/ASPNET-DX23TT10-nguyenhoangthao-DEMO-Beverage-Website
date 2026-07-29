@@ -1,0 +1,152 @@
+@model BeverageWebsite.ViewModels.CheckoutViewModel
+
+@{
+    ViewBag.Title = "Thanh toán";
+    var errorMessage = TempData["ErrorMessage"] as string;
+}
+
+<main class="container">
+    <h1>Thanh toán</h1>
+
+    @if (!string.IsNullOrWhiteSpace(errorMessage))
+    {
+        <div class="alert alert-danger">
+            @errorMessage
+        </div>
+    }
+
+    @if (Model == null)
+    {
+        <p>Không thể hiển thị thông tin thanh toán.</p>
+    }
+    else if (Model.Cart == null
+        || Model.Cart.Items == null
+        || Model.Cart.Items.Count == 0)
+    {
+        <p>Giỏ hàng của bạn hiện đang trống.</p>
+        <p>
+            @Html.ActionLink(
+                "Quay lại giỏ hàng",
+                "Index",
+                "Cart",
+                null,
+                new { @class = "btn btn-default" })
+        </p>
+    }
+    else
+    {
+        <h2>Thông tin đơn hàng</h2>
+
+        <div class="table-responsive">
+            <table class="table table-striped table-bordered">
+                <thead>
+                    <tr>
+                        <th scope="col">Sản phẩm</th>
+                        <th scope="col">Đơn giá</th>
+                        <th scope="col">Số lượng</th>
+                        <th scope="col">Thành tiền</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.Cart.Items)
+                    {
+                        var productName = string.IsNullOrWhiteSpace(item.ProductName)
+                            ? "Sản phẩm không khả dụng"
+                            : item.ProductName;
+
+                        <tr>
+                            <td>@productName</td>
+                            <td>@(item.UnitPrice.ToString("N0") + " đ")</td>
+                            <td>@item.Quantity</td>
+                            <td>@(item.LineTotal.ToString("N0") + " đ")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div>
+            <p><strong>Tổng số lượng:</strong> @Model.Cart.TotalItems</p>
+            <p>
+                <strong>Tổng tiền:</strong>
+                @(Model.Cart.CartTotal.ToString("N0") + " đ")
+            </p>
+        </div>
+
+        <h2>Địa chỉ giao hàng</h2>
+
+        if (Model.Addresses == null || Model.Addresses.Count == 0)
+        {
+            <p>Bạn chưa có địa chỉ giao hàng.</p>
+            <p>
+                @Html.ActionLink(
+                    "Quay lại giỏ hàng",
+                    "Index",
+                    "Cart",
+                    null,
+                    new { @class = "btn btn-default" })
+            </p>
+        }
+        else
+        {
+            using (Html.BeginForm(
+                "PlaceOrder",
+                "Checkout",
+                FormMethod.Post,
+                new { }))
+            {
+                @Html.AntiForgeryToken()
+
+                foreach (var address in Model.Addresses)
+                {
+                    var addressOptionId = "address-" + address.AddressId;
+
+                    <div class="radio">
+                        <label for="@addressOptionId">
+                            @Html.RadioButtonFor(
+                                model => model.Input.AddressId,
+                                address.AddressId,
+                                new { id = addressOptionId })
+                            <strong>@address.RecipientName</strong>
+                            @if (address.IsDefault)
+                            {
+                                <span class="label label-primary">Mặc định</span>
+                            }
+                            <br />
+                            <span>@address.Phone</span>
+                            <br />
+                            <span>@address.Street</span>
+                            @if (!string.IsNullOrWhiteSpace(address.Ward))
+                            {
+                                <span>, @address.Ward</span>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(address.District))
+                            {
+                                <span>, @address.District</span>
+                            }
+                            <span>, @address.City</span>
+                        </label>
+                    </div>
+                }
+
+                @Html.ValidationMessageFor(
+                    model => model.Input.AddressId,
+                    null,
+                    new { @class = "text-danger" })
+
+                <p>
+                    <button type="submit" class="btn btn-primary">
+                        Đặt hàng
+                    </button>
+
+                    @Html.ActionLink(
+                        "Quay lại giỏ hàng",
+                        "Index",
+                        "Cart",
+                        null,
+                        new { @class = "btn btn-default" })
+                </p>
+            }
+        }
+    }
+</main>
