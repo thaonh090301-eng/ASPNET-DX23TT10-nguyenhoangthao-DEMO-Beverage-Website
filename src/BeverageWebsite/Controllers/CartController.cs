@@ -163,5 +163,71 @@ namespace BeverageWebsite.Controllers
 
             return RedirectToAction("Index", "Cart");
         }
+
+        /// <summary>
+        /// Updates a cart item's quantity for the authenticated user.
+        /// </summary>
+        /// <param name="cartItemId">The cart-item identifier.</param>
+        /// <param name="quantity">The new quantity.</param>
+        /// <returns>A redirect to the cart.</returns>
+        [Authorize]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult UpdateQuantity(int cartItemId, int quantity)
+        {
+            if (cartItemId <= 0)
+            {
+                TempData["ErrorMessage"] = "Mục giỏ hàng không hợp lệ.";
+                return RedirectToAction("Index", "Cart");
+            }
+
+            if (quantity <= 0)
+            {
+                TempData["ErrorMessage"] = "Số lượng sản phẩm phải lớn hơn 0.";
+                return RedirectToAction("Index", "Cart");
+            }
+
+            var authenticatedEmail = User.Identity.Name;
+
+            if (string.IsNullOrWhiteSpace(authenticatedEmail))
+            {
+                FormsAuthentication.SignOut();
+                return RedirectToAction("Login", "Account");
+            }
+
+            var user = _userBll.GetByEmail(authenticatedEmail);
+
+            if (user == null || !user.IsActive)
+            {
+                FormsAuthentication.SignOut();
+                return RedirectToAction("Login", "Account");
+            }
+
+            try
+            {
+                var cart = _cartBll.GetByUserId(user.UserId);
+
+                if (cart == null)
+                {
+                    TempData["ErrorMessage"] = "Không tìm thấy giỏ hàng.";
+                    return RedirectToAction("Index", "Cart");
+                }
+
+                _cartBll.UpdateQuantity(
+                    user.UserId,
+                    cart.CartId,
+                    cartItemId,
+                    quantity);
+            }
+            catch (InvalidOperationException)
+            {
+                TempData["ErrorMessage"] =
+                    "Không thể cập nhật số lượng. Vui lòng kiểm tra tồn kho và thử lại.";
+                return RedirectToAction("Index", "Cart");
+            }
+
+            TempData["SuccessMessage"] = "Đã cập nhật số lượng sản phẩm.";
+            return RedirectToAction("Index", "Cart");
+        }
     }
 }
