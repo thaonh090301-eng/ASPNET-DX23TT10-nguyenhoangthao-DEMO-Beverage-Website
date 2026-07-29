@@ -16,6 +16,7 @@ namespace BeverageWebsite.Controllers
         private readonly ProductBLL _productBll;
         private readonly UserBLL _userBll;
         private readonly AddressBLL _addressBll;
+        private readonly OrderBLL _orderBll;
 
         /// <summary>
         /// Initializes the controller for authenticated checkout queries.
@@ -26,6 +27,7 @@ namespace BeverageWebsite.Controllers
             _productBll = new ProductBLL();
             _userBll = new UserBLL();
             _addressBll = new AddressBLL();
+            _orderBll = new OrderBLL();
         }
 
         /// <summary>
@@ -141,6 +143,79 @@ namespace BeverageWebsite.Controllers
             }
 
             return View(viewModel);
+        }
+
+        /// <summary>
+        /// Places an order for the authenticated user's cart.
+        /// </summary>
+        /// <param name="input">The selected checkout input.</param>
+        /// <returns>A redirect after the order attempt.</returns>
+        [Authorize]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult PlaceOrder(CheckoutInputViewModel input)
+        {
+            if (input == null || !ModelState.IsValid)
+            {
+                TempData["ErrorMessage"] = "Vui lòng chọn địa chỉ giao hàng hợp lệ.";
+                return RedirectToAction("Index", "Checkout");
+            }
+
+            var authenticatedEmail = User.Identity.Name;
+
+            if (string.IsNullOrWhiteSpace(authenticatedEmail))
+            {
+                FormsAuthentication.SignOut();
+                return RedirectToAction("Login", "Account");
+            }
+
+            var user = _userBll.GetByEmail(authenticatedEmail);
+
+            if (user == null || !user.IsActive)
+            {
+                FormsAuthentication.SignOut();
+                return RedirectToAction("Login", "Account");
+            }
+
+            var cart = _cartBll.GetByUserId(user.UserId);
+
+            if (cart == null)
+            {
+                TempData["ErrorMessage"] = "Giỏ hàng của bạn hiện đang trống.";
+                return RedirectToAction("Index", "Cart");
+            }
+
+            var cartItems = _cartBll.GetCartItems(user.UserId, cart.CartId);
+
+            if (cartItems == null || cartItems.Count == 0)
+            {
+                TempData["ErrorMessage"] = "Giỏ hàng của bạn hiện đang trống.";
+                return RedirectToAction("Index", "Cart");
+            }
+
+            try
+            {
+                var orderId = _orderBll.CreateOrderFromCart(
+                    user.UserId,
+                    cart.CartId,
+                    input.AddressId);
+
+                if (orderId > 0)
+                {
+                    TempData["SuccessMessage"] = "Đặt hàng thành công.";
+                    return RedirectToAction("Index", "Cart");
+                }
+            }
+            catch (InvalidOperationException)
+            {
+                TempData["ErrorMessage"] =
+                    "Không thể đặt hàng. Vui lòng kiểm tra giỏ hàng, địa chỉ và tồn kho rồi thử lại.";
+                return RedirectToAction("Index", "Checkout");
+            }
+
+            TempData["ErrorMessage"] =
+                "Không thể đặt hàng. Vui lòng kiểm tra giỏ hàng, địa chỉ và tồn kho rồi thử lại.";
+            return RedirectToAction("Index", "Checkout");
         }
     }
 }
