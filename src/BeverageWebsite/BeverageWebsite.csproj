@@ -65,6 +65,7 @@
     <Compile Include="Global.asax.cs" />
     <Compile Include="Controllers\HomeController.cs" />
     <Compile Include="Controllers\CategoryController.cs" />
+    <Compile Include="Controllers\ProductController.cs" />
     <Compile Include="BLL\AddressBLL.cs" />
     <Compile Include="BLL\CartBLL.cs" />
     <Compile Include="BLL\CategoryBLL.cs" />
