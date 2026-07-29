@@ -1,0 +1,76 @@
+@model BeverageWebsite.ViewModels.LoginViewModel
+
+@{
+    ViewBag.Title = "Đăng nhập";
+    var successMessage = TempData["SuccessMessage"] as string;
+}
+
+<main class="container">
+    <div class="row">
+        <div class="col-md-6">
+            <h1>Đăng nhập</h1>
+
+            @if (!string.IsNullOrWhiteSpace(successMessage))
+            {
+                <div class="alert alert-success">
+                    @successMessage
+                </div>
+            }
+
+            @using (Html.BeginForm(
+                "Login",
+                "Account",
+                FormMethod.Post,
+                new { @class = "form-horizontal", role = "form" }))
+            {
+                @Html.AntiForgeryToken()
+                @Html.Hidden("returnUrl", ViewBag.ReturnUrl as string)
+                @Html.ValidationSummary(false, "", new { @class = "text-danger" })
+
+                <div class="form-group">
+                    @Html.LabelFor(
+                        model => model.Email,
+                        new { @class = "control-label" })
+                    @Html.TextBoxFor(
+                        model => model.Email,
+                        new { @class = "form-control", autocomplete = "email" })
+                    @Html.ValidationMessageFor(
+                        model => model.Email,
+                        "",
+                        new { @class = "text-danger" })
+                </div>
+
+                <div class="form-group">
+                    @Html.LabelFor(
+                        model => model.Password,
+                        new { @class = "control-label" })
+                    @Html.PasswordFor(
+                        model => model.Password,
+                        new
+                        {
+                            @class = "form-control",
+                            autocomplete = "current-password"
+                        })
+                    @Html.ValidationMessageFor(
+                        model => model.Password,
+                        "",
+                        new { @class = "text-danger" })
+                </div>
+
+                <div class="checkbox">
+                    @Html.CheckBoxFor(model => model.RememberMe)
+                    @Html.LabelFor(model => model.RememberMe)
+                </div>
+
+                <button type="submit" class="btn btn-primary">Đăng nhập</button>
+            }
+
+            <p>
+                @Html.ActionLink(
+                    "Chưa có tài khoản? Đăng ký",
+                    "Register",
+                    "Account")
+            </p>
+        </div>
+    </div>
+</main>
