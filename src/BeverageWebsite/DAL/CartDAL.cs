@@ -263,6 +263,12 @@ namespace BeverageWebsite.DAL
                                 throw new InvalidOperationException("The cart item could not be updated.");
                             }
 
+                            UpdateCartTimestamp(
+                                connection,
+                                transaction,
+                                userId,
+                                cartId);
+
                             return affectedRows;
                         }
                     }
@@ -294,6 +300,12 @@ namespace BeverageWebsite.DAL
                         {
                             throw new InvalidOperationException("The cart item could not be inserted.");
                         }
+
+                        UpdateCartTimestamp(
+                            connection,
+                            transaction,
+                            userId,
+                            cartId);
 
                         return affectedRows;
                     }
@@ -404,6 +416,12 @@ namespace BeverageWebsite.DAL
                             throw new InvalidOperationException("The cart item could not be updated.");
                         }
 
+                        UpdateCartTimestamp(
+                            connection,
+                            transaction,
+                            userId,
+                            cartId);
+
                         return affectedRows;
                     }
                 });
@@ -474,6 +492,12 @@ namespace BeverageWebsite.DAL
                             throw new InvalidOperationException("The cart item could not be removed.");
                         }
 
+                        UpdateCartTimestamp(
+                            connection,
+                            transaction,
+                            userId,
+                            cartId);
+
                         return affectedRows;
                     }
                 });
@@ -516,7 +540,18 @@ namespace BeverageWebsite.DAL
                         command.Parameters.Add(
                             new SqlParameter("@CartId", SqlDbType.Int) { Value = cartId });
 
-                        return command.ExecuteNonQuery();
+                        var affectedRows = command.ExecuteNonQuery();
+
+                        if (affectedRows > 0)
+                        {
+                            UpdateCartTimestamp(
+                                connection,
+                                transaction,
+                                userId,
+                                cartId);
+                        }
+
+                        return affectedRows;
                     }
                 });
             }
@@ -599,6 +634,32 @@ namespace BeverageWebsite.DAL
             if (value <= 0)
             {
                 throw new ArgumentOutOfRangeException(parameterName, "Identifier must be greater than zero.");
+            }
+        }
+
+        private static void UpdateCartTimestamp(
+            SqlConnection connection,
+            SqlTransaction transaction,
+            int userId,
+            int cartId)
+        {
+            const string sql = @"UPDATE dbo.Cart
+                                 SET UpdatedAt = SYSUTCDATETIME()
+                                 WHERE CartId = @CartId
+                                   AND UserId = @UserId";
+
+            using (var command = new SqlCommand(sql, connection, transaction))
+            {
+                command.Parameters.Add(
+                    new SqlParameter("@UserId", SqlDbType.Int) { Value = userId });
+                command.Parameters.Add(
+                    new SqlParameter("@CartId", SqlDbType.Int) { Value = cartId });
+
+                if (command.ExecuteNonQuery() != 1)
+                {
+                    throw new InvalidOperationException(
+                        "The cart timestamp could not be updated.");
+                }
             }
         }
 
