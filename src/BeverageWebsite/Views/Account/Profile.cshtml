@@ -1,0 +1,56 @@
+@model BeverageWebsite.Models.User
+
+@{
+    ViewBag.Title = "Hồ sơ cá nhân";
+}
+
+<main class="container">
+    <div class="row">
+        <div class="col-md-8">
+            <h1>Hồ sơ cá nhân</h1>
+
+            @if (Model == null)
+            {
+                <p>Không thể hiển thị thông tin hồ sơ.</p>
+            }
+            else
+            {
+                <dl class="dl-horizontal">
+                    <dt>Tên đăng nhập</dt>
+                    <dd>@Model.UserName</dd>
+
+                    <dt>Email</dt>
+                    <dd>@Model.Email</dd>
+
+                    <dt>Họ và tên</dt>
+                    <dd>
+                        @(string.IsNullOrWhiteSpace(Model.FullName)
+                            ? "Chưa cập nhật"
+                            : Model.FullName)
+                    </dd>
+
+                    <dt>Số điện thoại</dt>
+                    <dd>
+                        @(string.IsNullOrWhiteSpace(Model.Phone)
+                            ? "Chưa cập nhật"
+                            : Model.Phone)
+                    </dd>
+
+                    <dt>Ngày tạo tài khoản</dt>
+                    <dd>
+                        @(Model.CreatedAt == System.DateTime.MinValue
+                            ? "Chưa xác định"
+                            : Model.CreatedAt.ToString("dd/MM/yyyy HH:mm"))
+                    </dd>
+                </dl>
+            }
+
+            @Html.ActionLink(
+                "Quay lại trang chủ",
+                "Index",
+                "Home",
+                null,
+                new { @class = "btn btn-default" })
+        </div>
+    </div>
+</main>
