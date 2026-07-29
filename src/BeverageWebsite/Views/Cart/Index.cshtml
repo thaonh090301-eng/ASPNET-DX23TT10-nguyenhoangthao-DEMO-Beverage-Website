@@ -2,10 +2,26 @@
 
 @{
     ViewBag.Title = "Giỏ hàng";
+    var errorMessage = TempData["ErrorMessage"] as string;
+    var successMessage = TempData["SuccessMessage"] as string;
 }
 
 <main class="container">
     <h1>Giỏ hàng</h1>
+
+    @if (!string.IsNullOrWhiteSpace(errorMessage))
+    {
+        <div class="alert alert-danger">
+            @errorMessage
+        </div>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(successMessage))
+    {
+        <div class="alert alert-success">
+            @successMessage
+        </div>
+    }
 
     @if (Model == null)
     {
@@ -58,7 +74,36 @@
                             </td>
                             <td>@productName</td>
                             <td>@(item.UnitPrice.ToString("N0") + " đ")</td>
-                            <td>@item.Quantity</td>
+                            <td>
+                                @using (Html.BeginForm(
+                                    "UpdateQuantity",
+                                    "Cart",
+                                    FormMethod.Post,
+                                    new { @class = "form-inline" }))
+                                {
+                                    @Html.AntiForgeryToken()
+                                    @Html.Hidden("cartItemId", item.CartItemId)
+
+                                    <div class="form-group">
+                                        <label class="sr-only"
+                                               for="quantity-@item.CartItemId">
+                                            Số lượng
+                                        </label>
+                                        <input type="number"
+                                               id="quantity-@item.CartItemId"
+                                               name="quantity"
+                                               value="@item.Quantity"
+                                               min="1"
+                                               step="1"
+                                               class="form-control" />
+                                    </div>
+
+                                    <button type="submit"
+                                            class="btn btn-primary btn-sm">
+                                        Cập nhật
+                                    </button>
+                                }
+                            </td>
                             <td>@(item.LineTotal.ToString("N0") + " đ")</td>
                         </tr>
                     }
