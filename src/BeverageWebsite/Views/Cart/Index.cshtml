@@ -143,6 +143,13 @@
                 "Product",
                 null,
                 new { @class = "btn btn-default" })
+
+            @Html.ActionLink(
+                "Thanh toán",
+                "Index",
+                "Checkout",
+                null,
+                new { @class = "btn btn-primary" })
         </p>
 
         using (Html.BeginForm(
