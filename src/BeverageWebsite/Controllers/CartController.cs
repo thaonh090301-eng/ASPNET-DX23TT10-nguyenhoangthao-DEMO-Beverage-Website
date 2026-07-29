@@ -286,5 +286,55 @@ namespace BeverageWebsite.Controllers
             TempData["SuccessMessage"] = "Đã xóa sản phẩm khỏi giỏ hàng.";
             return RedirectToAction("Index", "Cart");
         }
+
+        /// <summary>
+        /// Clears all items from the authenticated user's cart.
+        /// </summary>
+        /// <returns>A redirect to the cart.</returns>
+        [Authorize]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult ClearCart()
+        {
+            var authenticatedEmail = User.Identity.Name;
+
+            if (string.IsNullOrWhiteSpace(authenticatedEmail))
+            {
+                FormsAuthentication.SignOut();
+                return RedirectToAction("Login", "Account");
+            }
+
+            var user = _userBll.GetByEmail(authenticatedEmail);
+
+            if (user == null || !user.IsActive)
+            {
+                FormsAuthentication.SignOut();
+                return RedirectToAction("Login", "Account");
+            }
+
+            try
+            {
+                var cart = _cartBll.GetByUserId(user.UserId);
+
+                if (cart == null)
+                {
+                    TempData["ErrorMessage"] = "Không tìm thấy giỏ hàng.";
+                    return RedirectToAction("Index", "Cart");
+                }
+
+                _cartBll.ClearCart(
+                    user.UserId,
+                    cart.CartId);
+            }
+            catch (InvalidOperationException)
+            {
+                TempData["ErrorMessage"] =
+                    "Không thể xóa toàn bộ sản phẩm khỏi giỏ hàng.";
+                return RedirectToAction("Index", "Cart");
+            }
+
+            TempData["SuccessMessage"] = "Đã xóa toàn bộ sản phẩm khỏi giỏ hàng.";
+            return RedirectToAction("Index", "Cart");
+        }
     }
 }
