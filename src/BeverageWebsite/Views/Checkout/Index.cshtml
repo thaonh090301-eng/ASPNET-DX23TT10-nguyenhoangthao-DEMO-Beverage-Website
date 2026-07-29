@@ -3,6 +3,7 @@
 @{
     ViewBag.Title = "Thanh toán";
     var errorMessage = TempData["ErrorMessage"] as string;
+    var successMessage = TempData["SuccessMessage"] as string;
 }
 
 <main class="container">
@@ -12,6 +13,13 @@
     {
         <div class="alert alert-danger">
             @errorMessage
+        </div>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(successMessage))
+    {
+        <div class="alert alert-success">
+            @successMessage
         </div>
     }
 
@@ -79,6 +87,13 @@
         {
             <p>Bạn chưa có địa chỉ giao hàng.</p>
             <p>
+                @Html.ActionLink(
+                    "Thêm địa chỉ giao hàng",
+                    "Create",
+                    "Address",
+                    null,
+                    new { @class = "btn btn-primary" })
+
                 @Html.ActionLink(
                     "Quay lại giỏ hàng",
                     "Index",
