@@ -3,14 +3,55 @@
 
 @{
     ViewBag.Title = "Sản phẩm";
+    var keyword = ViewBag.Keyword as string ?? string.Empty;
+    var hasKeyword = !string.IsNullOrWhiteSpace(keyword);
+    var hasValidKeyword = hasKeyword && ViewData.ModelState.IsValid;
 }
 
 <main>
     <h1>Sản phẩm</h1>
 
+    @using (Html.BeginForm(
+        "Index",
+        "Product",
+        FormMethod.Get,
+        new { @class = "form-inline", role = "search" }))
+    {
+        <div class="form-group">
+            <label class="sr-only" for="keyword">Từ khóa tìm kiếm</label>
+            <input type="text"
+                   id="keyword"
+                   name="keyword"
+                   value="@keyword"
+                   class="form-control"
+                   placeholder="Nhập tên hoặc mô tả sản phẩm" />
+        </div>
+        <button type="submit" class="btn btn-primary">Tìm kiếm</button>
+        @Html.ActionLink(
+            "Xóa tìm kiếm",
+            "Index",
+            "Product",
+            null,
+            new { @class = "btn btn-default" })
+    }
+
+    @Html.ValidationSummary(false, "", new { @class = "text-danger" })
+
+    @if (hasValidKeyword)
+    {
+        <h2>Kết quả tìm kiếm cho: @keyword</h2>
+    }
+
     @if (Model == null || !Model.Any())
     {
-        <p>Hiện chưa có sản phẩm.</p>
+        if (hasValidKeyword)
+        {
+            <p>Không tìm thấy sản phẩm phù hợp.</p>
+        }
+        else if (!hasKeyword)
+        {
+            <p>Hiện chưa có sản phẩm.</p>
+        }
     }
     else
     {

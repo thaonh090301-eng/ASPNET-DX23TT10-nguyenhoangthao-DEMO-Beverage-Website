@@ -1,6 +1,8 @@
+using System.Collections.Generic;
 using System.Net;
 using System.Web.Mvc;
 using BeverageWebsite.BLL;
+using BeverageWebsite.Models;
 
 namespace BeverageWebsite.Controllers
 {
@@ -9,6 +11,8 @@ namespace BeverageWebsite.Controllers
     /// </summary>
     public class ProductController : Controller
     {
+        private const int SearchKeywordMaxLength = 1000;
+
         private readonly ProductBLL _productBll;
 
         /// <summary>
@@ -20,13 +24,33 @@ namespace BeverageWebsite.Controllers
         }
 
         /// <summary>
-        /// Displays all products.
+        /// Displays all products or products matching a keyword.
         /// </summary>
+        /// <param name="keyword">The optional product search keyword.</param>
         /// <returns>A view containing all products.</returns>
         [HttpGet]
-        public ActionResult Index()
+        public ActionResult Index(string keyword)
         {
-            var products = _productBll.GetAll();
+            if (string.IsNullOrWhiteSpace(keyword))
+            {
+                var allProducts = _productBll.GetAll();
+                ViewData["Keyword"] = string.Empty;
+                return View(allProducts);
+            }
+
+            var normalizedKeyword = keyword.Trim();
+
+            if (normalizedKeyword.Length > SearchKeywordMaxLength)
+            {
+                ModelState.AddModelError(
+                    string.Empty,
+                    "Từ khóa tìm kiếm không được vượt quá 1000 ký tự.");
+                ViewData["Keyword"] = keyword;
+                return View(new List<Product>());
+            }
+
+            var products = _productBll.Search(normalizedKeyword);
+            ViewData["Keyword"] = normalizedKeyword;
             return View(products);
         }
 
