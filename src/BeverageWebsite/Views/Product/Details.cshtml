@@ -2,42 +2,101 @@
 
 @{
     ViewBag.Title = "Chi tiết sản phẩm";
+    var cartErrorMessage = TempData["ErrorMessage"] as string;
 }
 
 <main>
     <h1>Chi tiết sản phẩm</h1>
 
-    <dl class="dl-horizontal">
-        <dt>Ảnh</dt>
-        <dd>
-            @if (string.IsNullOrWhiteSpace(Model.ImageUrl))
+    @if (!string.IsNullOrWhiteSpace(cartErrorMessage))
+    {
+        <div class="alert alert-danger">
+            @cartErrorMessage
+        </div>
+    }
+
+    @if (Model == null)
+    {
+        <p>Không thể hiển thị chi tiết sản phẩm.</p>
+    }
+    else
+    {
+        <dl class="dl-horizontal">
+            <dt>Ảnh</dt>
+            <dd>
+                @if (string.IsNullOrWhiteSpace(Model.ImageUrl))
+                {
+                    <span>Chưa có ảnh</span>
+                }
+                else
+                {
+                    <img src="@Url.Content(Model.ImageUrl)"
+                         alt="@Model.ProductName"
+                         class="img-responsive" />
+                }
+            </dd>
+
+            <dt>Tên sản phẩm</dt>
+            <dd>@Model.ProductName</dd>
+
+            <dt>Mô tả</dt>
+            <dd>
+                @(string.IsNullOrWhiteSpace(Model.Description)
+                    ? "Không có mô tả."
+                    : Model.Description)
+            </dd>
+
+            <dt>Giá</dt>
+            <dd>@Model.Price.ToString("N0") ₫</dd>
+
+            <dt>Trạng thái</dt>
+            <dd>@(Model.IsActive ? "Hoạt động" : "Không hoạt động")</dd>
+        </dl>
+
+        if (!Model.IsActive)
+        {
+            <p>Sản phẩm hiện không khả dụng.</p>
+        }
+        else if (!Request.IsAuthenticated)
+        {
+            <p>Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng.</p>
+            <p>
+                @Html.ActionLink(
+                    "Đăng nhập",
+                    "Login",
+                    "Account",
+                    null,
+                    new { @class = "btn btn-primary" })
+            </p>
+        }
+        else
+        {
+            using (Html.BeginForm(
+                "AddItem",
+                "Cart",
+                FormMethod.Post,
+                new { @class = "form-inline" }))
             {
-                <span>Chưa có ảnh</span>
+                @Html.AntiForgeryToken()
+                @Html.Hidden("productId", Model.ProductId)
+
+                <div class="form-group">
+                    <label for="quantity">Số lượng</label>
+                    <input type="number"
+                           id="quantity"
+                           name="quantity"
+                           value="1"
+                           min="1"
+                           step="1"
+                           class="form-control" />
+                </div>
+
+                <button type="submit" class="btn btn-primary">
+                    Thêm vào giỏ hàng
+                </button>
             }
-            else
-            {
-                <img src="@Url.Content(Model.ImageUrl)"
-                     alt="@Model.ProductName"
-                     class="img-responsive" />
-            }
-        </dd>
-
-        <dt>Tên sản phẩm</dt>
-        <dd>@Model.ProductName</dd>
-
-        <dt>Mô tả</dt>
-        <dd>
-            @(string.IsNullOrWhiteSpace(Model.Description)
-                ? "Không có mô tả."
-                : Model.Description)
-        </dd>
-
-        <dt>Giá</dt>
-        <dd>@Model.Price.ToString("N0") ₫</dd>
-
-        <dt>Trạng thái</dt>
-        <dd>@(Model.IsActive ? "Hoạt động" : "Không hoạt động")</dd>
-    </dl>
+        }
+    }
 
     <p>
         @Html.ActionLink(
