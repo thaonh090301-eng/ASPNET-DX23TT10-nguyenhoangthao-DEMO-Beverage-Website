@@ -5,6 +5,16 @@
     <title>Beverage Website</title>
 </head>
 <body>
+    <nav class="navbar navbar-default" aria-label="Điều hướng chính">
+        <div class="container">
+            <ul class="nav navbar-nav">
+                <li>@Html.ActionLink("Trang chủ", "Index", "Home")</li>
+                <li>@Html.ActionLink("Danh mục", "Index", "Category")</li>
+                <li>@Html.ActionLink("Sản phẩm", "Index", "Product")</li>
+            </ul>
+        </div>
+    </nav>
+
     @RenderBody()
 </body>
 </html>
