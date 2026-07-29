@@ -22,6 +22,10 @@
             }
             else
             {
+                <ul class="nav navbar-nav navbar-right">
+                    <li>@Html.ActionLink("Hồ sơ", "Profile", "Account")</li>
+                </ul>
+
                 using (Html.BeginForm(
                     "Logout",
                     "Account",
