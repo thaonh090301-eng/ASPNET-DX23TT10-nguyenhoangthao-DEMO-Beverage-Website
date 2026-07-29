@@ -229,5 +229,62 @@ namespace BeverageWebsite.Controllers
             TempData["SuccessMessage"] = "Đã cập nhật số lượng sản phẩm.";
             return RedirectToAction("Index", "Cart");
         }
+
+        /// <summary>
+        /// Removes a cart item for the authenticated user.
+        /// </summary>
+        /// <param name="cartItemId">The cart-item identifier.</param>
+        /// <returns>A redirect to the cart.</returns>
+        [Authorize]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult RemoveItem(int cartItemId)
+        {
+            if (cartItemId <= 0)
+            {
+                TempData["ErrorMessage"] = "Mục giỏ hàng không hợp lệ.";
+                return RedirectToAction("Index", "Cart");
+            }
+
+            var authenticatedEmail = User.Identity.Name;
+
+            if (string.IsNullOrWhiteSpace(authenticatedEmail))
+            {
+                FormsAuthentication.SignOut();
+                return RedirectToAction("Login", "Account");
+            }
+
+            var user = _userBll.GetByEmail(authenticatedEmail);
+
+            if (user == null || !user.IsActive)
+            {
+                FormsAuthentication.SignOut();
+                return RedirectToAction("Login", "Account");
+            }
+
+            try
+            {
+                var cart = _cartBll.GetByUserId(user.UserId);
+
+                if (cart == null)
+                {
+                    TempData["ErrorMessage"] = "Không tìm thấy giỏ hàng.";
+                    return RedirectToAction("Index", "Cart");
+                }
+
+                _cartBll.RemoveItem(
+                    user.UserId,
+                    cart.CartId,
+                    cartItemId);
+            }
+            catch (InvalidOperationException)
+            {
+                TempData["ErrorMessage"] = "Không thể xóa sản phẩm khỏi giỏ hàng.";
+                return RedirectToAction("Index", "Cart");
+            }
+
+            TempData["SuccessMessage"] = "Đã xóa sản phẩm khỏi giỏ hàng.";
+            return RedirectToAction("Index", "Cart");
+        }
     }
 }
