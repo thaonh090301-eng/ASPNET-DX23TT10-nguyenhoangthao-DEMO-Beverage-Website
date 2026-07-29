@@ -5,7 +5,16 @@
     ViewBag.Title = "Sản phẩm";
     var keyword = ViewBag.Keyword as string ?? string.Empty;
     var hasKeyword = !string.IsNullOrWhiteSpace(keyword);
-    var hasValidKeyword = hasKeyword && ViewData.ModelState.IsValid;
+    var categories = ViewBag.Categories as IEnumerable<BeverageWebsite.Models.Category>
+        ?? Enumerable.Empty<BeverageWebsite.Models.Category>();
+    var selectedCategoryId = ViewBag.CategoryId as int?;
+    var selectedCategory = selectedCategoryId.HasValue
+        ? categories.FirstOrDefault(category => category.CategoryId == selectedCategoryId.Value)
+        : null;
+    var hasValidKeyword = ViewData.ModelState.IsValid && hasKeyword;
+    var hasValidCategory = ViewData.ModelState.IsValid
+        && selectedCategoryId.HasValue
+        && !hasKeyword;
 }
 
 <main>
@@ -26,6 +35,18 @@
                    class="form-control"
                    placeholder="Nhập tên hoặc mô tả sản phẩm" />
         </div>
+        <div class="form-group">
+            <label class="sr-only" for="categoryId">Danh mục</label>
+            @Html.DropDownList(
+                "categoryId",
+                new SelectList(
+                    categories,
+                    "CategoryId",
+                    "CategoryName",
+                    selectedCategoryId),
+                "Tất cả danh mục",
+                new { @class = "form-control" })
+        </div>
         <button type="submit" class="btn btn-primary">Tìm kiếm</button>
         @Html.ActionLink(
             "Xóa tìm kiếm",
@@ -41,16 +62,27 @@
     {
         <h2>Kết quả tìm kiếm cho: @keyword</h2>
     }
+    else if (hasValidCategory && selectedCategory != null)
+    {
+        <h2>Sản phẩm thuộc danh mục: @selectedCategory.CategoryName</h2>
+    }
 
     @if (Model == null || !Model.Any())
     {
-        if (hasValidKeyword)
+        if (ViewData.ModelState.IsValid)
         {
-            <p>Không tìm thấy sản phẩm phù hợp.</p>
-        }
-        else if (!hasKeyword)
-        {
-            <p>Hiện chưa có sản phẩm.</p>
+            if (hasValidKeyword)
+            {
+                <p>Không tìm thấy sản phẩm phù hợp.</p>
+            }
+            else if (hasValidCategory)
+            {
+                <p>Danh mục này hiện chưa có sản phẩm.</p>
+            }
+            else
+            {
+                <p>Hiện chưa có sản phẩm.</p>
+            }
         }
     }
     else

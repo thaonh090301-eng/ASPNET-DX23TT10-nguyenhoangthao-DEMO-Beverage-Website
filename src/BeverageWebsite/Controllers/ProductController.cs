@@ -14,6 +14,7 @@ namespace BeverageWebsite.Controllers
         private const int SearchKeywordMaxLength = 1000;
 
         private readonly ProductBLL _productBll;
+        private readonly CategoryBLL _categoryBll;
 
         /// <summary>
         /// Initializes the controller for product queries.
@@ -21,37 +22,69 @@ namespace BeverageWebsite.Controllers
         public ProductController()
         {
             _productBll = new ProductBLL();
+            _categoryBll = new CategoryBLL();
         }
 
         /// <summary>
-        /// Displays all products or products matching a keyword.
+        /// Displays all products or products matching a public catalog filter.
         /// </summary>
         /// <param name="keyword">The optional product search keyword.</param>
+        /// <param name="categoryId">The optional category identifier.</param>
         /// <returns>A view containing all products.</returns>
         [HttpGet]
-        public ActionResult Index(string keyword)
+        public ActionResult Index(string keyword, int? categoryId)
         {
-            if (string.IsNullOrWhiteSpace(keyword))
-            {
-                var allProducts = _productBll.GetAll();
-                ViewData["Keyword"] = string.Empty;
-                return View(allProducts);
-            }
+            var categories = _categoryBll.GetAll();
+            var hasKeyword = !string.IsNullOrWhiteSpace(keyword);
+            var normalizedKeyword = hasKeyword ? keyword.Trim() : string.Empty;
+            var hasInvalidKeyword = normalizedKeyword.Length > SearchKeywordMaxLength;
+            var hasInvalidCategory = categoryId.HasValue && categoryId.Value <= 0;
 
-            var normalizedKeyword = keyword.Trim();
+            ViewData["Keyword"] = hasInvalidKeyword ? keyword : normalizedKeyword;
+            ViewData["CategoryId"] = categoryId;
+            ViewData["Categories"] = categories;
 
-            if (normalizedKeyword.Length > SearchKeywordMaxLength)
+            if (hasInvalidKeyword)
             {
                 ModelState.AddModelError(
                     string.Empty,
                     "Từ khóa tìm kiếm không được vượt quá 1000 ký tự.");
-                ViewData["Keyword"] = keyword;
+            }
+
+            if (hasInvalidCategory)
+            {
+                ModelState.AddModelError(
+                    string.Empty,
+                    "Danh mục sản phẩm không hợp lệ.");
+            }
+
+            if (hasInvalidKeyword || hasInvalidCategory)
+            {
                 return View(new List<Product>());
             }
 
-            var products = _productBll.Search(normalizedKeyword);
-            ViewData["Keyword"] = normalizedKeyword;
-            return View(products);
+            if (hasKeyword && categoryId.HasValue)
+            {
+                ModelState.AddModelError(
+                    string.Empty,
+                    "Hiện chưa hỗ trợ kết hợp từ khóa và danh mục trong cùng một lần tìm kiếm.");
+                return View(new List<Product>());
+            }
+
+            if (hasKeyword)
+            {
+                var matchingProducts = _productBll.Search(normalizedKeyword);
+                return View(matchingProducts);
+            }
+
+            if (categoryId.HasValue)
+            {
+                var categoryProducts = _productBll.GetByCategory(categoryId.Value);
+                return View(categoryProducts);
+            }
+
+            var allProducts = _productBll.GetAll();
+            return View(allProducts);
         }
 
         /// <summary>
