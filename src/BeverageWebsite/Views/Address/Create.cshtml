@@ -1,0 +1,152 @@
+@model BeverageWebsite.ViewModels.AddressInputViewModel
+
+@{
+    ViewBag.Title = "Thêm địa chỉ giao hàng";
+}
+
+<main class="container">
+    <div class="row">
+        <div class="col-md-8">
+            <h1>Thêm địa chỉ giao hàng</h1>
+
+            @using (Html.BeginForm(
+                "Create",
+                "Address",
+                FormMethod.Post,
+                new { @class = "form-horizontal" }))
+            {
+                @Html.AntiForgeryToken()
+                @Html.ValidationSummary(
+                    true,
+                    null,
+                    new { @class = "text-danger" })
+
+                <div class="form-group">
+                    @Html.LabelFor(
+                        model => model.RecipientName,
+                        "Tên người nhận",
+                        new { @class = "control-label col-sm-3" })
+                    <div class="col-sm-9">
+                        @Html.TextBoxFor(
+                            model => model.RecipientName,
+                            new { @class = "form-control", maxlength = "200" })
+                        @Html.ValidationMessageFor(
+                            model => model.RecipientName,
+                            null,
+                            new { @class = "text-danger" })
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    @Html.LabelFor(
+                        model => model.Phone,
+                        "Số điện thoại",
+                        new { @class = "control-label col-sm-3" })
+                    <div class="col-sm-9">
+                        @Html.TextBoxFor(
+                            model => model.Phone,
+                            new { @class = "form-control", maxlength = "20" })
+                        @Html.ValidationMessageFor(
+                            model => model.Phone,
+                            null,
+                            new { @class = "text-danger" })
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    @Html.LabelFor(
+                        model => model.Street,
+                        "Địa chỉ đường",
+                        new { @class = "control-label col-sm-3" })
+                    <div class="col-sm-9">
+                        @Html.TextBoxFor(
+                            model => model.Street,
+                            new { @class = "form-control", maxlength = "255" })
+                        @Html.ValidationMessageFor(
+                            model => model.Street,
+                            null,
+                            new { @class = "text-danger" })
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    @Html.LabelFor(
+                        model => model.Ward,
+                        "Phường hoặc xã",
+                        new { @class = "control-label col-sm-3" })
+                    <div class="col-sm-9">
+                        @Html.TextBoxFor(
+                            model => model.Ward,
+                            new { @class = "form-control", maxlength = "100" })
+                        @Html.ValidationMessageFor(
+                            model => model.Ward,
+                            null,
+                            new { @class = "text-danger" })
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    @Html.LabelFor(
+                        model => model.District,
+                        "Quận hoặc huyện",
+                        new { @class = "control-label col-sm-3" })
+                    <div class="col-sm-9">
+                        @Html.TextBoxFor(
+                            model => model.District,
+                            new { @class = "form-control", maxlength = "100" })
+                        @Html.ValidationMessageFor(
+                            model => model.District,
+                            null,
+                            new { @class = "text-danger" })
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    @Html.LabelFor(
+                        model => model.City,
+                        "Tỉnh hoặc thành phố",
+                        new { @class = "control-label col-sm-3" })
+                    <div class="col-sm-9">
+                        @Html.TextBoxFor(
+                            model => model.City,
+                            new { @class = "form-control", maxlength = "100" })
+                        @Html.ValidationMessageFor(
+                            model => model.City,
+                            null,
+                            new { @class = "text-danger" })
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <div class="col-sm-offset-3 col-sm-9">
+                        <div class="checkbox">
+                            <label>
+                                @Html.CheckBoxFor(model => model.IsDefault)
+                                Đặt làm địa chỉ mặc định
+                            </label>
+                        </div>
+                        @Html.ValidationMessageFor(
+                            model => model.IsDefault,
+                            null,
+                            new { @class = "text-danger" })
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <div class="col-sm-offset-3 col-sm-9">
+                        <button type="submit" class="btn btn-primary">
+                            Thêm địa chỉ
+                        </button>
+
+                        @Html.ActionLink(
+                            "Quay lại thanh toán",
+                            "Index",
+                            "Checkout",
+                            null,
+                            new { @class = "btn btn-default" })
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</main>
