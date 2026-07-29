@@ -7,7 +7,7 @@ using BeverageWebsite.ViewModels;
 namespace BeverageWebsite.Controllers
 {
     /// <summary>
-    /// Provides authenticated read-only access to the shopping cart.
+    /// Provides authenticated access to shopping-cart operations.
     /// </summary>
     public class CartController : Controller
     {
@@ -81,6 +81,87 @@ namespace BeverageWebsite.Controllers
             }
 
             return View(viewModel);
+        }
+
+        /// <summary>
+        /// Adds a product to the authenticated user's cart.
+        /// </summary>
+        /// <param name="productId">The product identifier.</param>
+        /// <param name="quantity">The quantity to add.</param>
+        /// <returns>A redirect to the cart or product catalog.</returns>
+        [Authorize]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult AddItem(int productId, int quantity)
+        {
+            if (productId <= 0)
+            {
+                TempData["ErrorMessage"] = "Sản phẩm không hợp lệ.";
+                return RedirectToAction("Index", "Product");
+            }
+
+            if (quantity <= 0)
+            {
+                TempData["ErrorMessage"] = "Số lượng sản phẩm phải lớn hơn 0.";
+                return RedirectToAction(
+                    "Details",
+                    "Product",
+                    new { id = productId });
+            }
+
+            var authenticatedEmail = User.Identity.Name;
+
+            if (string.IsNullOrWhiteSpace(authenticatedEmail))
+            {
+                FormsAuthentication.SignOut();
+                return RedirectToAction("Login", "Account");
+            }
+
+            var user = _userBll.GetByEmail(authenticatedEmail);
+
+            if (user == null || !user.IsActive)
+            {
+                FormsAuthentication.SignOut();
+                return RedirectToAction("Login", "Account");
+            }
+
+            try
+            {
+                var cart = _cartBll.GetByUserId(user.UserId);
+
+                if (cart == null)
+                {
+                    _cartBll.Create(user.UserId);
+                    cart = _cartBll.GetByUserId(user.UserId);
+                }
+
+                if (cart == null)
+                {
+                    TempData["ErrorMessage"] =
+                        "Không thể thêm sản phẩm vào giỏ hàng. Vui lòng kiểm tra số lượng và thử lại.";
+                    return RedirectToAction(
+                        "Details",
+                        "Product",
+                        new { id = productId });
+                }
+
+                _cartBll.AddItem(
+                    user.UserId,
+                    cart.CartId,
+                    productId,
+                    quantity);
+            }
+            catch (InvalidOperationException)
+            {
+                TempData["ErrorMessage"] =
+                    "Không thể thêm sản phẩm vào giỏ hàng. Vui lòng kiểm tra số lượng và thử lại.";
+                return RedirectToAction(
+                    "Details",
+                    "Product",
+                    new { id = productId });
+            }
+
+            return RedirectToAction("Index", "Cart");
         }
     }
 }
