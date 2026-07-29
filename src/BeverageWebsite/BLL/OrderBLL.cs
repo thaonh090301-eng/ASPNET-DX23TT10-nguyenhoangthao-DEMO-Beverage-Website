@@ -75,37 +75,27 @@ namespace BeverageWebsite.BLL
         }
 
         /// <summary>
-        /// Creates an order from a cart in one data access transaction.
-        /// Cart and address ownership are verified by the data access operation.
-        /// Product prices and totals are loaded or calculated there, and order-item
-        /// creation, inventory updates, and cart cleanup occur in the same transaction.
+        /// Creates an order from the specified user's cart.
         /// </summary>
-        /// <param name="order">The writable order inputs for checkout.</param>
+        /// <param name="userId">The user identifier.</param>
         /// <param name="cartId">The cart identifier.</param>
+        /// <param name="addressId">The shipping-address identifier.</param>
         /// <returns>The identifier of the newly created order.</returns>
-        public int CreateOrderFromCart(Order order, int cartId)
+        public int CreateOrderFromCart(
+            int userId,
+            int cartId,
+            int addressId)
         {
-            if (order == null)
-            {
-                throw new ArgumentNullException(nameof(order));
-            }
-
-            ValidateIdentifier(order.UserId, nameof(order.UserId));
+            ValidateIdentifier(userId, nameof(userId));
             ValidateIdentifier(cartId, nameof(cartId));
-            ValidateIdentifier(order.AddressId, nameof(order.AddressId));
-            ValidateNullableIdentifier(
-                order.PromotionId,
-                nameof(order.PromotionId));
-            ValidateShippingFee(
-                order.ShippingFee,
-                nameof(order.ShippingFee));
+            ValidateIdentifier(addressId, nameof(addressId));
 
             var checkoutOrder = new Order
             {
-                UserId = order.UserId,
-                AddressId = order.AddressId,
-                PromotionId = order.PromotionId,
-                ShippingFee = order.ShippingFee
+                UserId = userId,
+                AddressId = addressId,
+                PromotionId = null,
+                ShippingFee = 0m
             };
 
             return _orderDal.CreateOrderFromCart(checkoutOrder, cartId);
@@ -132,30 +122,6 @@ namespace BeverageWebsite.BLL
                 throw new ArgumentOutOfRangeException(
                     parameterName,
                     "The identifier must be greater than zero.");
-            }
-        }
-
-        private static void ValidateNullableIdentifier(
-            int? value,
-            string parameterName)
-        {
-            if (value.HasValue && value.Value <= 0)
-            {
-                throw new ArgumentOutOfRangeException(
-                    parameterName,
-                    "The identifier must be greater than zero when supplied.");
-            }
-        }
-
-        private static void ValidateShippingFee(
-            decimal shippingFee,
-            string parameterName)
-        {
-            if (shippingFee < 0m)
-            {
-                throw new ArgumentOutOfRangeException(
-                    parameterName,
-                    "Shipping fee must be greater than or equal to zero.");
             }
         }
 
