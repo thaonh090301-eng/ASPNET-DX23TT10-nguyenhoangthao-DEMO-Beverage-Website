@@ -82,6 +82,7 @@
     <Compile Include="BLL\ReviewBLL.cs" />
     <Compile Include="BLL\ShipmentBLL.cs" />
     <Compile Include="BLL\UserBLL.cs" />
+    <Compile Include="ViewModels\AddressInputViewModel.cs" />
     <Compile Include="ViewModels\CartItemViewModel.cs" />
     <Compile Include="ViewModels\CartViewModel.cs" />
     <Compile Include="ViewModels\CheckoutAddressViewModel.cs" />
