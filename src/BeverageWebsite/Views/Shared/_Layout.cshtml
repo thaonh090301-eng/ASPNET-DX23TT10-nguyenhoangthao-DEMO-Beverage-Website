@@ -12,6 +12,28 @@
                 <li>@Html.ActionLink("Danh mục", "Index", "Category")</li>
                 <li>@Html.ActionLink("Sản phẩm", "Index", "Product")</li>
             </ul>
+
+            @if (!Request.IsAuthenticated)
+            {
+                <ul class="nav navbar-nav navbar-right">
+                    <li>@Html.ActionLink("Đăng nhập", "Login", "Account")</li>
+                    <li>@Html.ActionLink("Đăng ký", "Register", "Account")</li>
+                </ul>
+            }
+            else
+            {
+                using (Html.BeginForm(
+                    "Logout",
+                    "Account",
+                    FormMethod.Post,
+                    new { @class = "navbar-form navbar-right" }))
+                {
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-link navbar-btn">
+                        Đăng xuất
+                    </button>
+                }
+            }
         </div>
     </nav>
 
