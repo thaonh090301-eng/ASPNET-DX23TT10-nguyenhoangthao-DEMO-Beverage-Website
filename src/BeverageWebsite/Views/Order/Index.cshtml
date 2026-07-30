@@ -35,6 +35,7 @@
                         <th scope="col">Tiền hàng</th>
                         <th scope="col">Phí giao hàng</th>
                         <th scope="col">Tổng thanh toán</th>
+                        <th scope="col">Thao tác</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -68,6 +69,14 @@
                             <td>@(order.TotalAmount.ToString("N0") + " đ")</td>
                             <td>@(order.ShippingFee.ToString("N0") + " đ")</td>
                             <td>@(order.FinalAmount.ToString("N0") + " đ")</td>
+                            <td>
+                                @Html.ActionLink(
+                                    "Xem chi tiết",
+                                    "Details",
+                                    "Order",
+                                    new { id = order.OrderId },
+                                    new { @class = "btn btn-info btn-sm" })
+                            </td>
                         </tr>
                     }
                 </tbody>
