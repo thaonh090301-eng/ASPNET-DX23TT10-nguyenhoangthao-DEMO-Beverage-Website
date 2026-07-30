@@ -103,6 +103,46 @@ namespace BeverageWebsite.DAL
         }
 
         /// <summary>
+        /// Retrieves an order owned by a user.
+        /// </summary>
+        /// <param name="userId">The owning user identifier.</param>
+        /// <param name="orderId">The requested order identifier.</param>
+        /// <returns>The owned <see cref="Order"/> when found; otherwise, null.</returns>
+        public Order GetById(int userId, int orderId)
+        {
+            if (userId <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(userId), "User identifier must be greater than zero.");
+            }
+
+            if (orderId <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(orderId), "Order identifier must be greater than zero.");
+            }
+
+            const string sql = @"SELECT O.OrderId, O.UserId, O.AddressId, O.PromotionId, O.OrderDate,
+                                        O.OrderStatus, O.TotalAmount, O.ShippingFee, O.FinalAmount
+                                 FROM dbo.[Order] AS O
+                                 WHERE O.OrderId = @OrderId
+                                   AND O.UserId = @UserId";
+            var parameters = new[]
+            {
+                new SqlParameter("@UserId", SqlDbType.Int) { Value = userId },
+                new SqlParameter("@OrderId", SqlDbType.Int) { Value = orderId }
+            };
+
+            using (var reader = _dataProvider.ExecuteReader(sql, CommandType.Text, parameters))
+            {
+                if (reader.Read())
+                {
+                    return MapOrder(reader);
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
         /// Retrieves all orders for a user, newest first.
         /// </summary>
         /// <param name="userId">The user identifier.</param>
@@ -178,6 +218,52 @@ namespace BeverageWebsite.DAL
             catch (Exception ex)
             {
                 throw new InvalidOperationException("Failed to retrieve order items.", ex);
+            }
+
+            return items;
+        }
+
+        /// <summary>
+        /// Retrieves all items belonging to an order owned by a user.
+        /// </summary>
+        /// <param name="userId">The owning user identifier.</param>
+        /// <param name="orderId">The requested order identifier.</param>
+        /// <returns>
+        /// The owned order items, or an empty list when the order is missing, not owned, or has no items.
+        /// </returns>
+        public List<OrderItem> GetOrderItems(int userId, int orderId)
+        {
+            if (userId <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(userId), "User identifier must be greater than zero.");
+            }
+
+            if (orderId <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(orderId), "Order identifier must be greater than zero.");
+            }
+
+            var items = new List<OrderItem>();
+            const string sql = @"SELECT OI.OrderItemId, OI.OrderId, OI.ProductId, OI.Quantity,
+                                        OI.UnitPrice, OI.DiscountAmount, OI.LineTotal
+                                 FROM dbo.OrderItem AS OI
+                                 INNER JOIN dbo.[Order] AS O
+                                     ON O.OrderId = OI.OrderId
+                                 WHERE OI.OrderId = @OrderId
+                                   AND O.UserId = @UserId
+                                 ORDER BY OI.OrderItemId";
+            var parameters = new[]
+            {
+                new SqlParameter("@UserId", SqlDbType.Int) { Value = userId },
+                new SqlParameter("@OrderId", SqlDbType.Int) { Value = orderId }
+            };
+
+            using (var reader = _dataProvider.ExecuteReader(sql, CommandType.Text, parameters))
+            {
+                while (reader.Read())
+                {
+                    items.Add(MapOrderItem(reader));
+                }
             }
 
             return items;
