@@ -53,6 +53,19 @@ namespace BeverageWebsite.BLL
         }
 
         /// <summary>
+        /// Retrieves an order owned by a user.
+        /// </summary>
+        /// <param name="userId">The owning user identifier.</param>
+        /// <param name="orderId">The requested order identifier.</param>
+        /// <returns>The owned order when found; otherwise, null.</returns>
+        public Order GetById(int userId, int orderId)
+        {
+            ValidateIdentifier(userId, nameof(userId));
+            ValidateIdentifier(orderId, nameof(orderId));
+            return _orderDal.GetById(userId, orderId);
+        }
+
+        /// <summary>
         /// Retrieves all orders belonging to a user.
         /// </summary>
         /// <param name="userId">The user identifier.</param>
@@ -72,6 +85,21 @@ namespace BeverageWebsite.BLL
         {
             ValidateIdentifier(orderId, nameof(orderId));
             return _orderDal.GetOrderItems(orderId);
+        }
+
+        /// <summary>
+        /// Retrieves all items belonging to an order owned by a user.
+        /// </summary>
+        /// <param name="userId">The owning user identifier.</param>
+        /// <param name="orderId">The requested order identifier.</param>
+        /// <returns>
+        /// The owned order items, or an empty list when the order is missing, not owned, or has no items.
+        /// </returns>
+        public List<OrderItem> GetOrderItems(int userId, int orderId)
+        {
+            ValidateIdentifier(userId, nameof(userId));
+            ValidateIdentifier(orderId, nameof(orderId));
+            return _orderDal.GetOrderItems(userId, orderId);
         }
 
         /// <summary>
