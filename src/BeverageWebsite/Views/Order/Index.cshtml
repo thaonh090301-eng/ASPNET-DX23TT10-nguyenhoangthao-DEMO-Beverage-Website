@@ -1,0 +1,86 @@
+@model BeverageWebsite.ViewModels.OrderHistoryViewModel
+
+@{
+    ViewBag.Title = "Đơn hàng của tôi";
+}
+
+<main class="container">
+    <h1>Đơn hàng của tôi</h1>
+
+    @if (Model == null)
+    {
+        <p>Không thể hiển thị lịch sử đơn hàng.</p>
+    }
+    else if (Model.Orders == null || Model.Orders.Count == 0)
+    {
+        <p>Bạn chưa có đơn hàng nào.</p>
+        <p>
+            @Html.ActionLink(
+                "Tiếp tục mua sắm",
+                "Index",
+                "Product",
+                null,
+                new { @class = "btn btn-primary" })
+        </p>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-striped table-bordered">
+                <thead>
+                    <tr>
+                        <th scope="col">Mã đơn</th>
+                        <th scope="col">Ngày đặt</th>
+                        <th scope="col">Trạng thái</th>
+                        <th scope="col">Tiền hàng</th>
+                        <th scope="col">Phí giao hàng</th>
+                        <th scope="col">Tổng thanh toán</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var order in Model.Orders)
+                    {
+                        var statusLabel = "Không xác định";
+
+                        switch (order.OrderStatus)
+                        {
+                            case "Pending":
+                                statusLabel = "Chờ xác nhận";
+                                break;
+                            case "Confirmed":
+                                statusLabel = "Đã xác nhận";
+                                break;
+                            case "Processing":
+                                statusLabel = "Đang xử lý";
+                                break;
+                            case "Completed":
+                                statusLabel = "Hoàn thành";
+                                break;
+                            case "Cancelled":
+                                statusLabel = "Đã hủy";
+                                break;
+                        }
+
+                        <tr>
+                            <td>#@order.OrderId</td>
+                            <td>@order.OrderDate.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td>@statusLabel</td>
+                            <td>@(order.TotalAmount.ToString("N0") + " đ")</td>
+                            <td>@(order.ShippingFee.ToString("N0") + " đ")</td>
+                            <td>@(order.FinalAmount.ToString("N0") + " đ")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <p>
+            @Html.ActionLink(
+                "Tiếp tục mua sắm",
+                "Index",
+                "Product",
+                null,
+                new { @class = "btn btn-default" })
+        </p>
+    }
+</main>
