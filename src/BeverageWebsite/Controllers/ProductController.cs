@@ -1,8 +1,10 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Web.Mvc;
 using BeverageWebsite.BLL;
 using BeverageWebsite.Models;
+using BeverageWebsite.ViewModels;
 
 namespace BeverageWebsite.Controllers
 {
@@ -15,6 +17,7 @@ namespace BeverageWebsite.Controllers
 
         private readonly ProductBLL _productBll;
         private readonly CategoryBLL _categoryBll;
+        private readonly InventoryBLL _inventoryBll;
 
         /// <summary>
         /// Initializes the controller for product queries.
@@ -23,6 +26,7 @@ namespace BeverageWebsite.Controllers
         {
             _productBll = new ProductBLL();
             _categoryBll = new CategoryBLL();
+            _inventoryBll = new InventoryBLL();
         }
 
         /// <summary>
@@ -34,7 +38,7 @@ namespace BeverageWebsite.Controllers
         [HttpGet]
         public ActionResult Index(string keyword, int? categoryId)
         {
-            var categories = _categoryBll.GetAll();
+            var categories = _categoryBll.GetActive();
             var hasKeyword = !string.IsNullOrWhiteSpace(keyword);
             var normalizedKeyword = hasKeyword ? keyword.Trim() : string.Empty;
             var hasInvalidKeyword = normalizedKeyword.Length > SearchKeywordMaxLength;
@@ -60,7 +64,7 @@ namespace BeverageWebsite.Controllers
 
             if (hasInvalidKeyword || hasInvalidCategory)
             {
-                return View(new List<Product>());
+                return View(new List<ProductCatalogItemViewModel>());
             }
 
             if (hasKeyword && categoryId.HasValue)
@@ -68,23 +72,55 @@ namespace BeverageWebsite.Controllers
                 ModelState.AddModelError(
                     string.Empty,
                     "Hiện chưa hỗ trợ kết hợp từ khóa và danh mục trong cùng một lần tìm kiếm.");
-                return View(new List<Product>());
+                return View(new List<ProductCatalogItemViewModel>());
             }
+
+            List<Product> products;
 
             if (hasKeyword)
             {
-                var matchingProducts = _productBll.Search(normalizedKeyword);
-                return View(matchingProducts);
+                products = _productBll.SearchActive(normalizedKeyword);
             }
-
-            if (categoryId.HasValue)
+            else if (categoryId.HasValue)
             {
-                var categoryProducts = _productBll.GetByCategory(categoryId.Value);
-                return View(categoryProducts);
+                var category = _categoryBll.GetActiveById(categoryId.Value);
+
+                if (category == null)
+                {
+                    return HttpNotFound();
+                }
+
+                products = _productBll.GetActiveByCategory(categoryId.Value);
+            }
+            else
+            {
+                products = _productBll.GetActive();
             }
 
-            var allProducts = _productBll.GetAll();
-            return View(allProducts);
+            var inventoryByProductId = _inventoryBll
+                .GetAll()
+                .ToDictionary(inventory => inventory.ProductId);
+            var viewModels = products.Select(product =>
+            {
+                BeverageWebsite.Models.Inventory inventory;
+                var stockQuantity = inventoryByProductId.TryGetValue(
+                    product.ProductId,
+                    out inventory)
+                    ? inventory.StockQuantity
+                    : 0;
+
+                return new ProductCatalogItemViewModel
+                {
+                    ProductId = product.ProductId,
+                    ProductName = product.ProductName,
+                    Description = product.Description,
+                    Price = product.Price,
+                    ImageUrl = product.ImageUrl,
+                    StockQuantity = stockQuantity
+                };
+            }).ToList();
+
+            return View(viewModels);
         }
 
         /// <summary>
@@ -103,14 +139,25 @@ namespace BeverageWebsite.Controllers
                 return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
             }
 
-            var product = _productBll.GetById(id.Value);
+            var product = _productBll.GetActiveById(id.Value);
 
             if (product == null)
             {
                 return HttpNotFound();
             }
 
-            return View(product);
+            var inventory = _inventoryBll.GetByProductId(product.ProductId);
+            var viewModel = new ProductDetailsViewModel
+            {
+                ProductId = product.ProductId,
+                ProductName = product.ProductName,
+                Description = product.Description,
+                Price = product.Price,
+                ImageUrl = product.ImageUrl,
+                StockQuantity = inventory != null ? inventory.StockQuantity : 0
+            };
+
+            return View(viewModel);
         }
     }
 }

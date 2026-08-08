@@ -29,6 +29,7 @@
                     <li>@Html.ActionLink("Giỏ hàng", "Index", "Cart")</li>
                     <li>@Html.ActionLink("Đơn hàng của tôi", "Index", "Order")</li>
                     <li>@Html.ActionLink("Hồ sơ", "Profile", "Account")</li>
+                    @Html.Action("AdminNavigation", "Navigation")
                 </ul>
 
                 using (Html.BeginForm(

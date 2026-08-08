@@ -52,6 +52,33 @@ namespace BeverageWebsite.DAL
         }
 
         /// <summary>
+        /// Retrieves all active categories for the public catalog.
+        /// </summary>
+        /// <returns>A list of active <see cref="Category"/> objects.</returns>
+        public List<Category> GetActive()
+        {
+            var categories = new List<Category>();
+            const string sql = @"SELECT CategoryId, CategoryName, Description, IsActive FROM dbo.Category WHERE IsActive = 1 ORDER BY CategoryName";
+
+            try
+            {
+                using (var reader = _dataProvider.ExecuteReader(sql))
+                {
+                    while (reader.Read())
+                    {
+                        categories.Add(MapCategory(reader));
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException("Failed to retrieve active categories.", ex);
+            }
+
+            return categories;
+        }
+
+        /// <summary>
         /// Retrieves a category by its identifier.
         /// </summary>
         /// <param name="id">The category identifier.</param>
@@ -79,6 +106,39 @@ namespace BeverageWebsite.DAL
             catch (Exception ex)
             {
                 throw new InvalidOperationException("Failed to retrieve the category.", ex);
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Retrieves an active category by its identifier for the public catalog.
+        /// </summary>
+        /// <param name="id">The category identifier.</param>
+        /// <returns>An active <see cref="Category"/> object if found; otherwise, null.</returns>
+        public Category GetActiveById(int id)
+        {
+            ValidateCategoryId(id, nameof(id));
+
+            const string sql = @"SELECT CategoryId, CategoryName, Description, IsActive FROM dbo.Category WHERE CategoryId = @CategoryId AND IsActive = 1";
+            var parameters = new[]
+            {
+                new SqlParameter("@CategoryId", SqlDbType.Int) { Value = id }
+            };
+
+            try
+            {
+                using (var reader = _dataProvider.ExecuteReader(sql, CommandType.Text, parameters))
+                {
+                    if (reader.Read())
+                    {
+                        return MapCategory(reader);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException("Failed to retrieve the active category.", ex);
             }
 
             return null;

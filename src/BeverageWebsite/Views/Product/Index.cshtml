@@ -1,5 +1,5 @@
 @using System.Linq
-@model IEnumerable<BeverageWebsite.Models.Product>
+@model IEnumerable<BeverageWebsite.ViewModels.ProductCatalogItemViewModel>
 
 @{
     ViewBag.Title = "Sản phẩm";
@@ -122,7 +122,7 @@
                                     : product.Description)
                             </td>
                             <td>@product.Price.ToString("N0") ₫</td>
-                            <td>@(product.IsActive ? "Hoạt động" : "Không hoạt động")</td>
+                            <td>@(product.IsInStock ? "Còn món" : "Tạm hết món")</td>
                             <td>
                                 @Html.ActionLink(
                                     "Xem chi tiết",

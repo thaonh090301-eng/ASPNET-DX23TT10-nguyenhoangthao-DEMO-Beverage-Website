@@ -1,0 +1,61 @@
+@model BeverageWebsite.ViewModels.AdminCategoryInputViewModel
+
+@{
+    ViewBag.Title = "Sửa loại đồ uống";
+}
+
+<main class="container">
+    <div class="row">
+        <div class="col-md-6">
+            <h1>Sửa loại đồ uống</h1>
+
+            @using (Html.BeginForm(
+                "EditCategory",
+                "Admin",
+                FormMethod.Post,
+                new { @class = "form-horizontal", role = "form" }))
+            {
+                @Html.AntiForgeryToken()
+                @Html.HiddenFor(model => model.CategoryId)
+                @Html.ValidationSummary(false, "", new { @class = "text-danger" })
+
+                <div class="form-group">
+                    <label class="control-label" for="CategoryName">Tên loại đồ uống</label>
+                    @Html.TextBoxFor(
+                        model => model.CategoryName,
+                        new { @class = "form-control" })
+                    @Html.ValidationMessageFor(
+                        model => model.CategoryName,
+                        "",
+                        new { @class = "text-danger" })
+                </div>
+
+                <div class="form-group">
+                    <label class="control-label" for="Description">Mô tả</label>
+                    @Html.TextAreaFor(
+                        model => model.Description,
+                        new { @class = "form-control", rows = "5" })
+                    @Html.ValidationMessageFor(
+                        model => model.Description,
+                        "",
+                        new { @class = "text-danger" })
+                </div>
+
+                <div class="checkbox">
+                    <label>
+                        @Html.CheckBoxFor(model => model.IsActive)
+                        Đang hoạt động
+                    </label>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
+                @Html.ActionLink(
+                    "Quay lại",
+                    "Categories",
+                    "Admin",
+                    null,
+                    new { @class = "btn btn-default" })
+            }
+        </div>
+    </div>
+</main>

@@ -1,0 +1,102 @@
+@model BeverageWebsite.ViewModels.AdminProductEditViewModel
+
+@{
+    ViewBag.Title = "Sửa sản phẩm";
+}
+
+<main class="container">
+    <div class="row">
+        <div class="col-md-8">
+            <h1>Sửa sản phẩm</h1>
+
+            @using (Html.BeginForm(
+                "EditProduct",
+                "Admin",
+                FormMethod.Post,
+                new { @class = "form-horizontal", role = "form" }))
+            {
+                @Html.AntiForgeryToken()
+                @Html.HiddenFor(model => model.ProductId)
+                @Html.ValidationSummary(false, "", new { @class = "text-danger" })
+
+                <div class="form-group">
+                    <label class="control-label" for="ProductName">Tên sản phẩm</label>
+                    @Html.TextBoxFor(
+                        model => model.ProductName,
+                        new { @class = "form-control" })
+                    @Html.ValidationMessageFor(
+                        model => model.ProductName,
+                        "",
+                        new { @class = "text-danger" })
+                </div>
+
+                <div class="form-group">
+                    <label class="control-label" for="CategoryId">Loại đồ uống</label>
+                    @Html.DropDownListFor(
+                        model => model.CategoryId,
+                        (SelectList)ViewBag.Categories,
+                        "Chọn loại đồ uống",
+                        new { @class = "form-control" })
+                    @Html.ValidationMessageFor(
+                        model => model.CategoryId,
+                        "",
+                        new { @class = "text-danger" })
+                </div>
+
+                <div class="form-group">
+                    <label class="control-label" for="Description">Mô tả</label>
+                    @Html.TextAreaFor(
+                        model => model.Description,
+                        new { @class = "form-control", rows = "5" })
+                    @Html.ValidationMessageFor(
+                        model => model.Description,
+                        "",
+                        new { @class = "text-danger" })
+                </div>
+
+                <div class="form-group">
+                    <label class="control-label" for="Price">Giá</label>
+                    @Html.TextBoxFor(
+                        model => model.Price,
+                        new
+                        {
+                            @class = "form-control",
+                            type = "number",
+                            min = "0",
+                            step = "1000"
+                        })
+                    @Html.ValidationMessageFor(
+                        model => model.Price,
+                        "",
+                        new { @class = "text-danger" })
+                </div>
+
+                <div class="form-group">
+                    <label class="control-label" for="ImageUrl">ImageUrl</label>
+                    @Html.TextBoxFor(
+                        model => model.ImageUrl,
+                        new { @class = "form-control" })
+                    @Html.ValidationMessageFor(
+                        model => model.ImageUrl,
+                        "",
+                        new { @class = "text-danger" })
+                </div>
+
+                <div class="checkbox">
+                    <label>
+                        @Html.CheckBoxFor(model => model.IsActive)
+                        Đang bán
+                    </label>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
+                @Html.ActionLink(
+                    "Quay lại",
+                    "Products",
+                    "Admin",
+                    null,
+                    new { @class = "btn btn-default" })
+            }
+        </div>
+    </div>
+</main>

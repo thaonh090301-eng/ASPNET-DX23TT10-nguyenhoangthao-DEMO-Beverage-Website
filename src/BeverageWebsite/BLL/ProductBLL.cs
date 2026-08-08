@@ -35,6 +35,15 @@ namespace BeverageWebsite.BLL
         }
 
         /// <summary>
+        /// Retrieves active products in active categories for the public catalog.
+        /// </summary>
+        /// <returns>Active products returned by the data access layer.</returns>
+        public List<Product> GetActive()
+        {
+            return _productDal.GetActive();
+        }
+
+        /// <summary>
         /// Retrieves a product by its identifier.
         /// </summary>
         /// <param name="productId">The product identifier.</param>
@@ -43,6 +52,17 @@ namespace BeverageWebsite.BLL
         {
             ValidateIdentifier(productId, nameof(productId));
             return _productDal.GetById(productId);
+        }
+
+        /// <summary>
+        /// Retrieves an active product in an active category by its identifier.
+        /// </summary>
+        /// <param name="productId">The product identifier.</param>
+        /// <returns>The matching active product when found; otherwise, null.</returns>
+        public Product GetActiveById(int productId)
+        {
+            ValidateIdentifier(productId, nameof(productId));
+            return _productDal.GetActiveById(productId);
         }
 
         /// <summary>
@@ -57,6 +77,17 @@ namespace BeverageWebsite.BLL
         }
 
         /// <summary>
+        /// Retrieves active products in an active category for the public catalog.
+        /// </summary>
+        /// <param name="categoryId">The category identifier.</param>
+        /// <returns>The active products returned for the category.</returns>
+        public List<Product> GetActiveByCategory(int categoryId)
+        {
+            ValidateIdentifier(categoryId, nameof(categoryId));
+            return _productDal.GetActiveByCategory(categoryId);
+        }
+
+        /// <summary>
         /// Searches products using a normalized literal keyword.
         /// </summary>
         /// <param name="keyword">The search keyword.</param>
@@ -64,6 +95,16 @@ namespace BeverageWebsite.BLL
         public List<Product> Search(string keyword)
         {
             return _productDal.Search(NormalizeSearchKeyword(keyword));
+        }
+
+        /// <summary>
+        /// Searches active products in active categories using a normalized literal keyword.
+        /// </summary>
+        /// <param name="keyword">The search keyword.</param>
+        /// <returns>The matching active products returned by the data access layer.</returns>
+        public List<Product> SearchActive(string keyword)
+        {
+            return _productDal.SearchActive(NormalizeSearchKeyword(keyword));
         }
 
         /// <summary>

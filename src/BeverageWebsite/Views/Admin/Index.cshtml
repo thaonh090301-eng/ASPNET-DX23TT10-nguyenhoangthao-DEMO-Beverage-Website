@@ -1,0 +1,57 @@
+@model BeverageWebsite.ViewModels.AdminDashboardViewModel
+
+@{
+    ViewBag.Title = "Quản trị";
+}
+
+<main>
+    <h1>Quản trị cửa hàng</h1>
+
+    <div class="row">
+        <section class="col-sm-3">
+            <div class="panel panel-default">
+                <div class="panel-heading">Danh mục đang hoạt động</div>
+                <div class="panel-body">@Model.ActiveCategoryCount</div>
+            </div>
+        </section>
+        <section class="col-sm-3">
+            <div class="panel panel-default">
+                <div class="panel-heading">Sản phẩm đang bán</div>
+                <div class="panel-body">@Model.ActiveProductCount</div>
+            </div>
+        </section>
+        <section class="col-sm-3">
+            <div class="panel panel-default">
+                <div class="panel-heading">Còn món</div>
+                <div class="panel-body">@Model.InStockProductCount</div>
+            </div>
+        </section>
+        <section class="col-sm-3">
+            <div class="panel panel-default">
+                <div class="panel-heading">Tạm hết món</div>
+                <div class="panel-body">@Model.OutOfStockProductCount</div>
+            </div>
+        </section>
+    </div>
+
+    <p>
+        @Html.ActionLink(
+            "Quản lý sản phẩm",
+            "Products",
+            "Admin",
+            null,
+            new { @class = "btn btn-primary" })
+        @Html.ActionLink(
+            "Quản lý loại đồ uống",
+            "Categories",
+            "Admin",
+            null,
+            new { @class = "btn btn-primary" })
+        @Html.ActionLink(
+            "Quản lý tồn kho",
+            "Inventory",
+            "Admin",
+            null,
+            new { @class = "btn btn-primary" })
+    </p>
+</main>

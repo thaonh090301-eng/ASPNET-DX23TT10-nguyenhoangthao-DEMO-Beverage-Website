@@ -1,4 +1,4 @@
-@model BeverageWebsite.Models.Product
+@model BeverageWebsite.ViewModels.ProductDetailsViewModel
 
 @{
     ViewBag.Title = "Chi tiết sản phẩm";
@@ -50,12 +50,17 @@
             <dd>@Model.Price.ToString("N0") ₫</dd>
 
             <dt>Trạng thái</dt>
-            <dd>@(Model.IsActive ? "Hoạt động" : "Không hoạt động")</dd>
+            <dd>@(Model.IsInStock ? "Còn món" : "Tạm hết món")</dd>
         </dl>
 
-        if (!Model.IsActive)
+        if (!Model.IsInStock)
         {
-            <p>Sản phẩm hiện không khả dụng.</p>
+            <p>Món này hiện đang tạm hết. Vui lòng chọn món khác.</p>
+            <button type="button"
+                    class="btn btn-default"
+                    disabled="disabled">
+                Tạm hết món
+            </button>
         }
         else if (!Request.IsAuthenticated)
         {
@@ -87,6 +92,7 @@
                            name="quantity"
                            value="1"
                            min="1"
+                           max="@Model.StockQuantity"
                            step="1"
                            class="form-control" />
                 </div>

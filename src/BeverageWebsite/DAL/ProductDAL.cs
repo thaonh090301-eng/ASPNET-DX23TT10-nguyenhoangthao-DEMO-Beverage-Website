@@ -58,6 +58,48 @@ namespace BeverageWebsite.DAL
         }
 
         /// <summary>
+        /// Retrieves active products in active categories for the public catalog.
+        /// </summary>
+        /// <returns>A list of active <see cref="Product"/> objects.</returns>
+        public List<Product> GetActive()
+        {
+            var products = new List<Product>();
+            const string sql = @"
+SELECT
+    P.ProductId,
+    P.CategoryId,
+    P.ProductName,
+    P.Description,
+    P.Price,
+    P.ImageUrl,
+    P.IsActive,
+    P.CreatedAt
+FROM dbo.Product AS P
+INNER JOIN dbo.Category AS C
+    ON C.CategoryId = P.CategoryId
+WHERE P.IsActive = 1
+  AND C.IsActive = 1
+ORDER BY P.ProductName, P.ProductId";
+
+            try
+            {
+                using (var reader = _dataProvider.ExecuteReader(sql))
+                {
+                    while (reader.Read())
+                    {
+                        products.Add(MapProduct(reader));
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException("Failed to retrieve active products.", ex);
+            }
+
+            return products;
+        }
+
+        /// <summary>
         /// Retrieves a product by its identifier.
         /// </summary>
         /// <param name="id">The product identifier.</param>
@@ -85,6 +127,54 @@ namespace BeverageWebsite.DAL
             catch (Exception ex)
             {
                 throw new InvalidOperationException("Failed to retrieve the product.", ex);
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Retrieves an active product in an active category by its identifier.
+        /// </summary>
+        /// <param name="id">The product identifier.</param>
+        /// <returns>An active <see cref="Product"/> object if found; otherwise, null.</returns>
+        public Product GetActiveById(int id)
+        {
+            ValidateIdentifier(id, nameof(id));
+
+            const string sql = @"
+SELECT
+    P.ProductId,
+    P.CategoryId,
+    P.ProductName,
+    P.Description,
+    P.Price,
+    P.ImageUrl,
+    P.IsActive,
+    P.CreatedAt
+FROM dbo.Product AS P
+INNER JOIN dbo.Category AS C
+    ON C.CategoryId = P.CategoryId
+WHERE P.ProductId = @ProductId
+  AND P.IsActive = 1
+  AND C.IsActive = 1";
+            var parameters = new[]
+            {
+                new SqlParameter("@ProductId", SqlDbType.Int) { Value = id }
+            };
+
+            try
+            {
+                using (var reader = _dataProvider.ExecuteReader(sql, CommandType.Text, parameters))
+                {
+                    if (reader.Read())
+                    {
+                        return MapProduct(reader);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException("Failed to retrieve the active product.", ex);
             }
 
             return null;
@@ -119,6 +209,56 @@ namespace BeverageWebsite.DAL
             catch (Exception ex)
             {
                 throw new InvalidOperationException("Failed to retrieve products for the category.", ex);
+            }
+
+            return products;
+        }
+
+        /// <summary>
+        /// Retrieves active products in an active category for the public catalog.
+        /// </summary>
+        /// <param name="categoryId">The category identifier.</param>
+        /// <returns>A list of active <see cref="Product"/> objects.</returns>
+        public List<Product> GetActiveByCategory(int categoryId)
+        {
+            ValidateIdentifier(categoryId, nameof(categoryId));
+
+            var products = new List<Product>();
+            const string sql = @"
+SELECT
+    P.ProductId,
+    P.CategoryId,
+    P.ProductName,
+    P.Description,
+    P.Price,
+    P.ImageUrl,
+    P.IsActive,
+    P.CreatedAt
+FROM dbo.Product AS P
+INNER JOIN dbo.Category AS C
+    ON C.CategoryId = P.CategoryId
+WHERE P.CategoryId = @CategoryId
+  AND P.IsActive = 1
+  AND C.IsActive = 1
+ORDER BY P.ProductName, P.ProductId";
+            var parameters = new[]
+            {
+                new SqlParameter("@CategoryId", SqlDbType.Int) { Value = categoryId }
+            };
+
+            try
+            {
+                using (var reader = _dataProvider.ExecuteReader(sql, CommandType.Text, parameters))
+                {
+                    while (reader.Read())
+                    {
+                        products.Add(MapProduct(reader));
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException("Failed to retrieve active products for the category.", ex);
             }
 
             return products;
@@ -179,6 +319,70 @@ ORDER BY P.ProductName, P.ProductId";
             catch (Exception ex)
             {
                 throw new InvalidOperationException("Failed to search products.", ex);
+            }
+
+            return products;
+        }
+
+        /// <summary>
+        /// Searches active products in active categories by a literal keyword.
+        /// </summary>
+        /// <param name="keyword">The keyword to search for.</param>
+        /// <returns>A list of matching active <see cref="Product"/> objects.</returns>
+        public List<Product> SearchActive(string keyword)
+        {
+            if (string.IsNullOrWhiteSpace(keyword))
+            {
+                throw new ArgumentException("A search keyword must be provided.", nameof(keyword));
+            }
+
+            var normalizedKeyword = keyword.Trim();
+
+            if (normalizedKeyword.Length > SearchKeywordMaxLength)
+            {
+                throw new ArgumentException("The search keyword exceeds the allowed maximum length.", nameof(keyword));
+            }
+
+            var products = new List<Product>();
+            const string sql = @"
+SELECT
+    P.ProductId,
+    P.CategoryId,
+    P.ProductName,
+    P.Description,
+    P.Price,
+    P.ImageUrl,
+    P.IsActive,
+    P.CreatedAt
+FROM dbo.Product AS P
+INNER JOIN dbo.Category AS C
+    ON C.CategoryId = P.CategoryId
+WHERE P.IsActive = 1
+  AND C.IsActive = 1
+  AND (P.ProductName LIKE @Keyword ESCAPE N'\'
+       OR P.Description LIKE @Keyword ESCAPE N'\')
+ORDER BY P.ProductName, P.ProductId";
+            var parameters = new[]
+            {
+                new SqlParameter("@Keyword", SqlDbType.NVarChar, SearchPatternMaxLength)
+                {
+                    Value = $"%{EscapeLikePattern(normalizedKeyword)}%"
+                }
+            };
+
+            try
+            {
+                using (var reader = _dataProvider.ExecuteReader(sql, CommandType.Text, parameters))
+                {
+                    while (reader.Read())
+                    {
+                        products.Add(MapProduct(reader));
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException("Failed to search active products.", ex);
             }
 
             return products;

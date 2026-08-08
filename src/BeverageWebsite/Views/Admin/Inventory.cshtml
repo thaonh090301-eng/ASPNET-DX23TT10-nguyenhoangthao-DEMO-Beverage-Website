@@ -1,0 +1,100 @@
+@using System.Linq
+@model IEnumerable<BeverageWebsite.ViewModels.AdminInventoryItemViewModel>
+
+@{
+    ViewBag.Title = "Quản lý tồn kho";
+    var successMessage = TempData["SuccessMessage"] as string;
+    var errorMessage = TempData["ErrorMessage"] as string;
+}
+
+<main>
+    <h1>Quản lý tồn kho</h1>
+
+    @if (!string.IsNullOrWhiteSpace(successMessage))
+    {
+        <div class="alert alert-success">@successMessage</div>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(errorMessage))
+    {
+        <div class="alert alert-danger">@errorMessage</div>
+    }
+
+    @if (Model == null || !Model.Any())
+    {
+        <p>Hiện chưa có sản phẩm đang kinh doanh.</p>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-striped table-bordered">
+                <thead>
+                    <tr>
+                        <th scope="col">Danh mục</th>
+                        <th scope="col">Sản phẩm</th>
+                        <th scope="col">Giá</th>
+                        <th scope="col">Trạng thái</th>
+                        <th scope="col">Tồn kho</th>
+                        <th scope="col">Ngưỡng nhập lại</th>
+                        <th scope="col">Cập nhật</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>@item.CategoryName</td>
+                            <td>@item.ProductName</td>
+                            <td>@item.Price.ToString("N0") ₫</td>
+                            <td>@(item.IsInStock ? "Còn món" : "Tạm hết món")</td>
+                            <td>@item.StockQuantity</td>
+                            <td>@item.ReorderLevel</td>
+                            <td>
+                                @if (item.HasInventory)
+                                {
+                                    using (Html.BeginForm(
+                                        "UpdateStock",
+                                        "Admin",
+                                        FormMethod.Post,
+                                        new { @class = "form-inline" }))
+                                    {
+                                        @Html.AntiForgeryToken()
+                                        @Html.Hidden("productId", item.ProductId)
+                                        <div class="form-group">
+                                            <label class="sr-only"
+                                                   for="quantity-@item.ProductId">
+                                                Tồn kho
+                                            </label>
+                                            <input type="number"
+                                                   id="quantity-@item.ProductId"
+                                                   name="quantity"
+                                                   min="0"
+                                                   value="@item.StockQuantity"
+                                                   class="form-control" />
+                                        </div>
+                                        <button type="submit" class="btn btn-primary">
+                                            Cập nhật
+                                        </button>
+                                    }
+                                }
+                                else
+                                {
+                                    <span>Thiếu dữ liệu kho</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+
+    <p>
+        @Html.ActionLink(
+            "Quay lại quản trị",
+            "Index",
+            "Admin",
+            null,
+            new { @class = "btn btn-default" })
+    </p>
+</main>

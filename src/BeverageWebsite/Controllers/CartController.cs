@@ -14,6 +14,7 @@ namespace BeverageWebsite.Controllers
         private readonly CartBLL _cartBll;
         private readonly ProductBLL _productBll;
         private readonly UserBLL _userBll;
+        private readonly InventoryBLL _inventoryBll;
 
         /// <summary>
         /// Initializes the controller for authenticated cart queries.
@@ -23,6 +24,7 @@ namespace BeverageWebsite.Controllers
             _cartBll = new CartBLL();
             _productBll = new ProductBLL();
             _userBll = new UserBLL();
+            _inventoryBll = new InventoryBLL();
         }
 
         /// <summary>
@@ -127,6 +129,18 @@ namespace BeverageWebsite.Controllers
 
             try
             {
+                var inventory = _inventoryBll.GetByProductId(productId);
+
+                if (inventory == null || inventory.StockQuantity <= 0)
+                {
+                    TempData["ErrorMessage"] =
+                        "Món này hiện đang tạm hết. Vui lòng chọn món khác.";
+                    return RedirectToAction(
+                        "Details",
+                        "Product",
+                        new { id = productId });
+                }
+
                 var cart = _cartBll.GetByUserId(user.UserId);
 
                 if (cart == null)

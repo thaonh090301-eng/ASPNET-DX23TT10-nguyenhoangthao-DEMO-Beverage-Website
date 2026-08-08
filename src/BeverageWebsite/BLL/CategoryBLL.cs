@@ -33,6 +33,15 @@ namespace BeverageWebsite.BLL
         }
 
         /// <summary>
+        /// Retrieves active categories for the public catalog.
+        /// </summary>
+        /// <returns>Active categories returned by the data access layer.</returns>
+        public List<Category> GetActive()
+        {
+            return _categoryDal.GetActive();
+        }
+
+        /// <summary>
         /// Retrieves a category by its identifier.
         /// </summary>
         /// <param name="categoryId">The category identifier.</param>
@@ -41,6 +50,17 @@ namespace BeverageWebsite.BLL
         {
             ValidateCategoryId(categoryId);
             return _categoryDal.GetById(categoryId);
+        }
+
+        /// <summary>
+        /// Retrieves an active category by its identifier for the public catalog.
+        /// </summary>
+        /// <param name="categoryId">The category identifier.</param>
+        /// <returns>The matching active category when found; otherwise, null.</returns>
+        public Category GetActiveById(int categoryId)
+        {
+            ValidateCategoryId(categoryId);
+            return _categoryDal.GetActiveById(categoryId);
         }
 
         /// <summary>

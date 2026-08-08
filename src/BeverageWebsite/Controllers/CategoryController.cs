@@ -26,7 +26,7 @@ namespace BeverageWebsite.Controllers
         [HttpGet]
         public ActionResult Index()
         {
-            var categories = _categoryBll.GetAll();
+            var categories = _categoryBll.GetActive();
             return View(categories);
         }
 
@@ -46,7 +46,7 @@ namespace BeverageWebsite.Controllers
                 return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
             }
 
-            var category = _categoryBll.GetById(id.Value);
+            var category = _categoryBll.GetActiveById(id.Value);
 
             if (category == null)
             {

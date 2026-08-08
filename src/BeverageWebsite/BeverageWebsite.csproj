@@ -76,12 +76,14 @@
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
     <Compile Include="Controllers\HomeController.cs" />
+    <Compile Include="Controllers\AdminController.cs" />
     <Compile Include="Controllers\AccountController.cs" />
     <Compile Include="Controllers\AddressController.cs" />
     <Compile Include="Controllers\CartController.cs" />
     <Compile Include="Controllers\CheckoutController.cs" />
     <Compile Include="Controllers\CategoryController.cs" />
     <Compile Include="Controllers\OrderController.cs" />
+    <Compile Include="Controllers\NavigationController.cs" />
     <Compile Include="Controllers\ProductController.cs" />
     <Compile Include="BLL\AddressBLL.cs" />
     <Compile Include="BLL\CartBLL.cs" />
@@ -94,7 +96,13 @@
     <Compile Include="BLL\ReviewBLL.cs" />
     <Compile Include="BLL\ShipmentBLL.cs" />
     <Compile Include="BLL\UserBLL.cs" />
+    <Compile Include="Filters\AdminAuthorizeAttribute.cs" />
     <Compile Include="ViewModels\AddressInputViewModel.cs" />
+    <Compile Include="ViewModels\AdminDashboardViewModel.cs" />
+    <Compile Include="ViewModels\AdminCategoryInputViewModel.cs" />
+    <Compile Include="ViewModels\AdminInventoryItemViewModel.cs" />
+    <Compile Include="ViewModels\AdminProductEditViewModel.cs" />
+    <Compile Include="ViewModels\AdminProductItemViewModel.cs" />
     <Compile Include="ViewModels\CartItemViewModel.cs" />
     <Compile Include="ViewModels\CartViewModel.cs" />
     <Compile Include="ViewModels\CheckoutAddressViewModel.cs" />
@@ -105,6 +113,8 @@
     <Compile Include="ViewModels\OrderDetailsViewModel.cs" />
     <Compile Include="ViewModels\OrderHistoryItemViewModel.cs" />
     <Compile Include="ViewModels\OrderHistoryViewModel.cs" />
+    <Compile Include="ViewModels\ProductCatalogItemViewModel.cs" />
+    <Compile Include="ViewModels\ProductDetailsViewModel.cs" />
     <Compile Include="ViewModels\RegisterViewModel.cs" />
     <Compile Include="Models\Address.cs" />
     <Compile Include="Models\Cart.cs" />
@@ -137,6 +147,13 @@
     <Content Include="Global.asax" />
     <Content Include="Web.config" />
     <Content Include="Views\_ViewStart.cshtml" />
+    <Content Include="Views\Admin\Index.cshtml" />
+    <Content Include="Views\Admin\Inventory.cshtml" />
+    <Content Include="Views\Admin\Products.cshtml" />
+    <Content Include="Views\Admin\EditProduct.cshtml" />
+    <Content Include="Views\Admin\Categories.cshtml" />
+    <Content Include="Views\Admin\CreateCategory.cshtml" />
+    <Content Include="Views\Admin\EditCategory.cshtml" />
     <Content Include="Views\Address\Create.cshtml" />
     <Content Include="Views\Account\Login.cshtml" />
     <Content Include="Views\Account\Profile.cshtml" />
@@ -151,6 +168,7 @@
     <Content Include="Views\Product\Details.cshtml" />
     <Content Include="Views\Home\Index.cshtml" />
     <Content Include="Views\Shared\_Layout.cshtml" />
+    <Content Include="Views\Shared\_AdminNavigation.cshtml" />
     <Content Include="Views\Web.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
