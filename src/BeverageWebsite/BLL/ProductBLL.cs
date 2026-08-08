@@ -142,6 +142,62 @@ namespace BeverageWebsite.BLL
         }
 
         /// <summary>
+        /// Validates, normalizes, and creates a product with its initial inventory.
+        /// </summary>
+        /// <param name="product">The product data to create.</param>
+        /// <param name="stockQuantity">The initial stock quantity.</param>
+        /// <param name="reorderLevel">The stock level at which replenishment is needed.</param>
+        /// <returns>The identifier of the newly created product.</returns>
+        public int CreateWithInventory(
+            Product product,
+            int stockQuantity,
+            int reorderLevel)
+        {
+            if (product == null)
+            {
+                throw new ArgumentNullException(nameof(product));
+            }
+
+            ValidateIdentifier(product.CategoryId, nameof(product.CategoryId));
+            ValidatePrice(product.Price);
+
+            if (stockQuantity < 0)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(stockQuantity),
+                    "Stock quantity must be greater than or equal to zero.");
+            }
+
+            if (reorderLevel < 0)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(reorderLevel),
+                    "Reorder level must be greater than or equal to zero.");
+            }
+
+            var normalizedProduct = new Product
+            {
+                CategoryId = product.CategoryId,
+                ProductName = NormalizeProductName(product.ProductName),
+                Description = NormalizeOptionalString(
+                    product.Description,
+                    DescriptionMaxLength,
+                    nameof(product.Description)),
+                Price = product.Price,
+                ImageUrl = NormalizeOptionalString(
+                    product.ImageUrl,
+                    ImageUrlMaxLength,
+                    nameof(product.ImageUrl)),
+                IsActive = product.IsActive
+            };
+
+            return _productDal.InsertWithInventory(
+                normalizedProduct,
+                stockQuantity,
+                reorderLevel);
+        }
+
+        /// <summary>
         /// Validates, normalizes, and updates a product.
         /// </summary>
         /// <param name="product">The product data to update.</param>
@@ -186,6 +242,17 @@ namespace BeverageWebsite.BLL
         {
             ValidateIdentifier(productId, nameof(productId));
             return _productDal.Delete(productId);
+        }
+
+        /// <summary>
+        /// Deletes a product only when it has no cart, order, or review references.
+        /// </summary>
+        /// <param name="productId">The product identifier.</param>
+        /// <returns><c>true</c> when the product was deleted; otherwise, <c>false</c>.</returns>
+        public bool DeleteIfUnused(int productId)
+        {
+            ValidateIdentifier(productId, nameof(productId));
+            return _productDal.DeleteIfUnused(productId);
         }
 
         private static void ValidateIdentifier(int value, string parameterName)

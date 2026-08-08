@@ -460,6 +460,125 @@ ORDER BY P.ProductName, P.ProductId";
         }
 
         /// <summary>
+        /// Inserts a product and its initial inventory record in one transaction.
+        /// </summary>
+        /// <param name="product">The product to insert.</param>
+        /// <param name="stockQuantity">The initial stock quantity.</param>
+        /// <param name="reorderLevel">The stock level at which replenishment is needed.</param>
+        /// <returns>The identifier of the newly inserted product.</returns>
+        public int InsertWithInventory(
+            Product product,
+            int stockQuantity,
+            int reorderLevel)
+        {
+            if (product == null)
+            {
+                throw new ArgumentNullException(nameof(product));
+            }
+
+            ValidateIdentifier(product.CategoryId, nameof(product.CategoryId));
+
+            if (product.Price < 0m)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(product.Price),
+                    "Product price must be greater than or equal to zero.");
+            }
+
+            if (stockQuantity < 0)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(stockQuantity),
+                    "Stock quantity must be greater than or equal to zero.");
+            }
+
+            if (reorderLevel < 0)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(reorderLevel),
+                    "Reorder level must be greater than or equal to zero.");
+            }
+
+            var productName = NormalizeRequiredString(
+                product.ProductName,
+                ProductNameMaxLength,
+                nameof(product.ProductName));
+            var description = NormalizeOptionalString(
+                product.Description,
+                DescriptionMaxLength,
+                nameof(product.Description));
+            var imageUrl = NormalizeOptionalString(
+                product.ImageUrl,
+                ImageUrlMaxLength,
+                nameof(product.ImageUrl));
+
+            return _dataProvider.ExecuteInTransaction((connection, transaction) =>
+            {
+                const string productSql = @"
+INSERT INTO dbo.Product
+    (CategoryId, ProductName, Description, Price, ImageUrl, IsActive)
+OUTPUT INSERTED.ProductId
+VALUES
+    (@CategoryId, @ProductName, @Description, @Price, @ImageUrl, @IsActive);";
+
+                int productId;
+
+                using (var productCommand = new SqlCommand(
+                    productSql,
+                    connection,
+                    transaction))
+                {
+                    productCommand.Parameters.Add(new SqlParameter("@CategoryId", SqlDbType.Int) { Value = product.CategoryId });
+                    productCommand.Parameters.Add(new SqlParameter("@ProductName", SqlDbType.NVarChar, ProductNameMaxLength) { Value = productName });
+                    productCommand.Parameters.Add(new SqlParameter("@Description", SqlDbType.NVarChar, DescriptionMaxLength) { Value = (object)description ?? DBNull.Value });
+                    productCommand.Parameters.Add(CreatePriceParameter(product.Price));
+                    productCommand.Parameters.Add(new SqlParameter("@ImageUrl", SqlDbType.NVarChar, ImageUrlMaxLength) { Value = (object)imageUrl ?? DBNull.Value });
+                    productCommand.Parameters.Add(new SqlParameter("@IsActive", SqlDbType.Bit) { Value = product.IsActive });
+
+                    var result = productCommand.ExecuteScalar();
+
+                    if (result == null || result == DBNull.Value)
+                    {
+                        throw new InvalidOperationException(
+                            "The product insert did not return an identifier.");
+                    }
+
+                    productId = Convert.ToInt32(result);
+                }
+
+                if (productId <= 0)
+                {
+                    throw new InvalidOperationException(
+                        "The product insert returned an invalid identifier.");
+                }
+
+                const string inventorySql = @"
+INSERT INTO dbo.Inventory
+    (ProductId, StockQuantity, ReorderLevel)
+VALUES
+    (@ProductId, @StockQuantity, @ReorderLevel);";
+
+                using (var inventoryCommand = new SqlCommand(
+                    inventorySql,
+                    connection,
+                    transaction))
+                {
+                    inventoryCommand.Parameters.Add(new SqlParameter("@ProductId", SqlDbType.Int) { Value = productId });
+                    inventoryCommand.Parameters.Add(new SqlParameter("@StockQuantity", SqlDbType.Int) { Value = stockQuantity });
+                    inventoryCommand.Parameters.Add(new SqlParameter("@ReorderLevel", SqlDbType.Int) { Value = reorderLevel });
+
+                    if (inventoryCommand.ExecuteNonQuery() != 1)
+                    {
+                        throw new InvalidOperationException(
+                            "The inventory insert did not affect exactly one record.");
+                    }
+                }
+
+                return productId;
+            });
+        }
+
+        /// <summary>
         /// Updates an existing product in the database.
         /// </summary>
         /// <param name="product">The product to update.</param>
@@ -565,6 +684,112 @@ ORDER BY P.ProductName, P.ProductId";
             }
 
             return affectedRows;
+        }
+
+        /// <summary>
+        /// Deletes a product and its inventory only when no cart, order, or review references exist.
+        /// </summary>
+        /// <param name="productId">The product identifier.</param>
+        /// <returns><c>true</c> when the product was deleted; otherwise, <c>false</c>.</returns>
+        public bool DeleteIfUnused(int productId)
+        {
+            ValidateIdentifier(productId, nameof(productId));
+
+            return _dataProvider.ExecuteInTransaction(
+                (connection, transaction) =>
+                {
+                    const string productExistsSql = @"
+SELECT CASE WHEN EXISTS
+(
+    SELECT 1
+    FROM dbo.Product WITH (UPDLOCK, HOLDLOCK)
+    WHERE ProductId = @ProductId
+)
+THEN 1 ELSE 0 END;";
+
+                    using (var existsCommand = new SqlCommand(
+                        productExistsSql,
+                        connection,
+                        transaction))
+                    {
+                        existsCommand.Parameters.Add(
+                            new SqlParameter("@ProductId", SqlDbType.Int)
+                            {
+                                Value = productId
+                            });
+
+                        if (Convert.ToInt32(existsCommand.ExecuteScalar()) != 1)
+                        {
+                            return false;
+                        }
+                    }
+
+                    const string referenceExistsSql = @"
+SELECT CASE WHEN
+    EXISTS (SELECT 1 FROM dbo.CartItem WITH (UPDLOCK, HOLDLOCK) WHERE ProductId = @ProductId)
+    OR EXISTS (SELECT 1 FROM dbo.OrderItem WITH (UPDLOCK, HOLDLOCK) WHERE ProductId = @ProductId)
+    OR EXISTS (SELECT 1 FROM dbo.Review WITH (UPDLOCK, HOLDLOCK) WHERE ProductId = @ProductId)
+THEN 1 ELSE 0 END;";
+
+                    using (var referenceCommand = new SqlCommand(
+                        referenceExistsSql,
+                        connection,
+                        transaction))
+                    {
+                        referenceCommand.Parameters.Add(
+                            new SqlParameter("@ProductId", SqlDbType.Int)
+                            {
+                                Value = productId
+                            });
+
+                        if (Convert.ToInt32(referenceCommand.ExecuteScalar()) == 1)
+                        {
+                            return false;
+                        }
+                    }
+
+                    const string inventoryDeleteSql = @"
+DELETE FROM dbo.Inventory
+WHERE ProductId = @ProductId;";
+
+                    using (var inventoryCommand = new SqlCommand(
+                        inventoryDeleteSql,
+                        connection,
+                        transaction))
+                    {
+                        inventoryCommand.Parameters.Add(
+                            new SqlParameter("@ProductId", SqlDbType.Int)
+                            {
+                                Value = productId
+                            });
+                        inventoryCommand.ExecuteNonQuery();
+                    }
+
+                    const string productDeleteSql = @"
+DELETE FROM dbo.Product
+WHERE ProductId = @ProductId;";
+
+                    using (var productCommand = new SqlCommand(
+                        productDeleteSql,
+                        connection,
+                        transaction))
+                    {
+                        productCommand.Parameters.Add(
+                            new SqlParameter("@ProductId", SqlDbType.Int)
+                            {
+                                Value = productId
+                            });
+
+                        if (productCommand.ExecuteNonQuery() != 1)
+                        {
+                            throw new InvalidOperationException(
+                                "The product delete did not affect exactly one record.");
+                        }
+                    }
+
+                    return true;
+                },
+                IsolationLevel.Serializable);
         }
 
         private static void ValidateIdentifier(int value, string parameterName)

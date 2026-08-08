@@ -101,6 +101,7 @@
     <Compile Include="ViewModels\AdminDashboardViewModel.cs" />
     <Compile Include="ViewModels\AdminCategoryInputViewModel.cs" />
     <Compile Include="ViewModels\AdminInventoryItemViewModel.cs" />
+    <Compile Include="ViewModels\AdminProductCreateViewModel.cs" />
     <Compile Include="ViewModels\AdminProductEditViewModel.cs" />
     <Compile Include="ViewModels\AdminProductItemViewModel.cs" />
     <Compile Include="ViewModels\CartItemViewModel.cs" />
@@ -149,6 +150,7 @@
     <Content Include="Views\_ViewStart.cshtml" />
     <Content Include="Views\Admin\Index.cshtml" />
     <Content Include="Views\Admin\Inventory.cshtml" />
+    <Content Include="Views\Admin\CreateProduct.cshtml" />
     <Content Include="Views\Admin\Products.cshtml" />
     <Content Include="Views\Admin\EditProduct.cshtml" />
     <Content Include="Views\Admin\Categories.cshtml" />

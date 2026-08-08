@@ -73,6 +73,19 @@
                                     "Admin",
                                     new { id = category.CategoryId },
                                     new { @class = "btn btn-default btn-sm" })
+                                @using (Html.BeginForm(
+                                    "DeleteCategory",
+                                    "Admin",
+                                    FormMethod.Post,
+                                    new { style = "display:inline" }))
+                                {
+                                    @Html.AntiForgeryToken()
+                                    @Html.Hidden("categoryId", category.CategoryId)
+                                    <button
+                                        type="submit"
+                                        class="btn btn-danger btn-sm"
+                                        onclick="return confirm('Bạn có chắc muốn xóa loại đồ uống này?');">Xóa</button>
+                                }
                             </td>
                         </tr>
                     }

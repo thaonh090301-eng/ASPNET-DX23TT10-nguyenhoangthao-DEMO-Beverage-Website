@@ -121,6 +121,17 @@ namespace BeverageWebsite.BLL
             return _categoryDal.Delete(categoryId);
         }
 
+        /// <summary>
+        /// Deletes a category only when no product belongs to it.
+        /// </summary>
+        /// <param name="categoryId">The category identifier.</param>
+        /// <returns><c>true</c> when the category was deleted; otherwise, <c>false</c>.</returns>
+        public bool DeleteIfEmpty(int categoryId)
+        {
+            ValidateCategoryId(categoryId);
+            return _categoryDal.DeleteIfEmpty(categoryId);
+        }
+
         private static void ValidateCategoryId(int categoryId)
         {
             if (categoryId <= 0)

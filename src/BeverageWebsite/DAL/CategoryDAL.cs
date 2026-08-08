@@ -287,6 +287,97 @@ namespace BeverageWebsite.DAL
             return affectedRows;
         }
 
+        /// <summary>
+        /// Deletes a category only when no active or inactive product belongs to it.
+        /// </summary>
+        /// <param name="categoryId">The category identifier.</param>
+        /// <returns><c>true</c> when the category was deleted; otherwise, <c>false</c>.</returns>
+        public bool DeleteIfEmpty(int categoryId)
+        {
+            ValidateCategoryId(categoryId, nameof(categoryId));
+
+            return _dataProvider.ExecuteInTransaction(
+                (connection, transaction) =>
+                {
+                    const string categoryExistsSql = @"
+SELECT CASE WHEN EXISTS
+(
+    SELECT 1
+    FROM dbo.Category WITH (UPDLOCK, HOLDLOCK)
+    WHERE CategoryId = @CategoryId
+)
+THEN 1 ELSE 0 END;";
+
+                    using (var existsCommand = new SqlCommand(
+                        categoryExistsSql,
+                        connection,
+                        transaction))
+                    {
+                        existsCommand.Parameters.Add(
+                            new SqlParameter("@CategoryId", SqlDbType.Int)
+                            {
+                                Value = categoryId
+                            });
+
+                        if (Convert.ToInt32(existsCommand.ExecuteScalar()) != 1)
+                        {
+                            return false;
+                        }
+                    }
+
+                    const string productExistsSql = @"
+SELECT CASE WHEN EXISTS
+(
+    SELECT 1
+    FROM dbo.Product WITH (UPDLOCK, HOLDLOCK)
+    WHERE CategoryId = @CategoryId
+)
+THEN 1 ELSE 0 END;";
+
+                    using (var productCommand = new SqlCommand(
+                        productExistsSql,
+                        connection,
+                        transaction))
+                    {
+                        productCommand.Parameters.Add(
+                            new SqlParameter("@CategoryId", SqlDbType.Int)
+                            {
+                                Value = categoryId
+                            });
+
+                        if (Convert.ToInt32(productCommand.ExecuteScalar()) == 1)
+                        {
+                            return false;
+                        }
+                    }
+
+                    const string deleteSql = @"
+DELETE FROM dbo.Category
+WHERE CategoryId = @CategoryId;";
+
+                    using (var deleteCommand = new SqlCommand(
+                        deleteSql,
+                        connection,
+                        transaction))
+                    {
+                        deleteCommand.Parameters.Add(
+                            new SqlParameter("@CategoryId", SqlDbType.Int)
+                            {
+                                Value = categoryId
+                            });
+
+                        if (deleteCommand.ExecuteNonQuery() != 1)
+                        {
+                            throw new InvalidOperationException(
+                                "The category delete did not affect exactly one record.");
+                        }
+                    }
+
+                    return true;
+                },
+                IsolationLevel.Serializable);
+        }
+
         private static Category MapCategory(SqlDataReader reader)
         {
             var categoryIdOrdinal = reader.GetOrdinal("CategoryId");

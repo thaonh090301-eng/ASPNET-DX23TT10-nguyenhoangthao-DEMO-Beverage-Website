@@ -205,6 +205,103 @@ namespace BeverageWebsite.Controllers
         }
 
         /// <summary>
+        /// Displays the form for creating a product and its initial inventory.
+        /// </summary>
+        /// <returns>The product creation view or the category management view.</returns>
+        [HttpGet]
+        public ActionResult CreateProduct()
+        {
+            var categories = _categoryBll.GetAll();
+
+            if (categories.Count == 0)
+            {
+                TempData["ErrorMessage"] =
+                    "Cần tạo loại đồ uống trước khi thêm sản phẩm.";
+                return RedirectToAction("Categories", "Admin");
+            }
+
+            ViewBag.Categories = new SelectList(
+                categories,
+                "CategoryId",
+                "CategoryName");
+
+            return View(new AdminProductCreateViewModel
+            {
+                IsActive = true,
+                StockQuantity = 50,
+                ReorderLevel = 10
+            });
+        }
+
+        /// <summary>
+        /// Creates a product and its initial inventory in one transaction.
+        /// </summary>
+        /// <param name="model">The submitted product and inventory data.</param>
+        /// <returns>The creation view on failure or a redirect on success.</returns>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult CreateProduct(AdminProductCreateViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                PopulateCategorySelectList(model.CategoryId);
+                return View(model);
+            }
+
+            try
+            {
+                Category category = null;
+
+                if (model.CategoryId > 0)
+                {
+                    category = _categoryBll.GetById(model.CategoryId);
+                }
+
+                if (category == null)
+                {
+                    ModelState.AddModelError(
+                        "CategoryId",
+                        "Loại đồ uống không hợp lệ.");
+                    PopulateCategorySelectList(model.CategoryId);
+                    return View(model);
+                }
+
+                var product = new Product
+                {
+                    CategoryId = model.CategoryId,
+                    ProductName = model.ProductName,
+                    Description = model.Description,
+                    Price = model.Price,
+                    ImageUrl = model.ImageUrl,
+                    IsActive = model.IsActive
+                };
+
+                _productBll.CreateWithInventory(
+                    product,
+                    model.StockQuantity,
+                    model.ReorderLevel);
+
+                TempData["SuccessMessage"] = "Đã thêm sản phẩm mới.";
+                return RedirectToAction("Products", "Admin");
+            }
+            catch (ArgumentException)
+            {
+                ModelState.AddModelError(
+                    string.Empty,
+                    "Không thể thêm sản phẩm. Vui lòng kiểm tra dữ liệu.");
+            }
+            catch (InvalidOperationException)
+            {
+                ModelState.AddModelError(
+                    string.Empty,
+                    "Không thể thêm sản phẩm. Vui lòng kiểm tra dữ liệu.");
+            }
+
+            PopulateCategorySelectList(model.CategoryId);
+            return View(model);
+        }
+
+        /// <summary>
         /// Displays the edit form for an active or inactive product.
         /// </summary>
         /// <param name="id">The product identifier.</param>
@@ -314,6 +411,55 @@ namespace BeverageWebsite.Controllers
 
             PopulateCategorySelectList(model.CategoryId);
             return View(model);
+        }
+
+        /// <summary>
+        /// Permanently deletes an unused product and its inventory record.
+        /// </summary>
+        /// <param name="productId">The product identifier.</param>
+        /// <returns>A redirect to the product management view.</returns>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult DeleteProduct(int productId)
+        {
+            if (productId <= 0)
+            {
+                TempData["ErrorMessage"] = "Không tìm thấy sản phẩm.";
+                return RedirectToAction("Products", "Admin");
+            }
+
+            try
+            {
+                var product = _productBll.GetById(productId);
+
+                if (product == null)
+                {
+                    TempData["ErrorMessage"] = "Không tìm thấy sản phẩm.";
+                    return RedirectToAction("Products", "Admin");
+                }
+
+                if (_productBll.DeleteIfUnused(productId))
+                {
+                    TempData["SuccessMessage"] = "Đã xóa sản phẩm.";
+                }
+                else
+                {
+                    TempData["ErrorMessage"] =
+                        "Không thể xóa sản phẩm vì đã phát sinh dữ liệu. Hãy chuyển sản phẩm sang trạng thái Ngừng bán.";
+                }
+            }
+            catch (ArgumentException)
+            {
+                TempData["ErrorMessage"] =
+                    "Không thể xóa sản phẩm. Vui lòng thử lại.";
+            }
+            catch (InvalidOperationException)
+            {
+                TempData["ErrorMessage"] =
+                    "Không thể xóa sản phẩm. Vui lòng thử lại.";
+            }
+
+            return RedirectToAction("Products", "Admin");
         }
 
         /// <summary>
@@ -468,6 +614,55 @@ namespace BeverageWebsite.Controllers
             }
 
             return View(model);
+        }
+
+        /// <summary>
+        /// Permanently deletes a category that contains no products.
+        /// </summary>
+        /// <param name="categoryId">The category identifier.</param>
+        /// <returns>A redirect to the category management view.</returns>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult DeleteCategory(int categoryId)
+        {
+            if (categoryId <= 0)
+            {
+                TempData["ErrorMessage"] = "Không tìm thấy loại đồ uống.";
+                return RedirectToAction("Categories", "Admin");
+            }
+
+            try
+            {
+                var category = _categoryBll.GetById(categoryId);
+
+                if (category == null)
+                {
+                    TempData["ErrorMessage"] = "Không tìm thấy loại đồ uống.";
+                    return RedirectToAction("Categories", "Admin");
+                }
+
+                if (_categoryBll.DeleteIfEmpty(categoryId))
+                {
+                    TempData["SuccessMessage"] = "Đã xóa loại đồ uống.";
+                }
+                else
+                {
+                    TempData["ErrorMessage"] =
+                        "Không thể xóa loại đồ uống vì vẫn còn sản phẩm thuộc loại này.";
+                }
+            }
+            catch (ArgumentException)
+            {
+                TempData["ErrorMessage"] =
+                    "Không thể xóa loại đồ uống. Vui lòng thử lại.";
+            }
+            catch (InvalidOperationException)
+            {
+                TempData["ErrorMessage"] =
+                    "Không thể xóa loại đồ uống. Vui lòng thử lại.";
+            }
+
+            return RedirectToAction("Categories", "Admin");
         }
 
         private void PopulateCategorySelectList(int selectedCategoryId)

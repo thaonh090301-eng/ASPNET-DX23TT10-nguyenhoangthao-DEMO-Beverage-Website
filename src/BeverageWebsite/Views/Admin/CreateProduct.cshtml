@@ -1,23 +1,21 @@
-@using System.Globalization
-@model BeverageWebsite.ViewModels.AdminProductEditViewModel
+@model BeverageWebsite.ViewModels.AdminProductCreateViewModel
 
 @{
-    ViewBag.Title = "Sửa sản phẩm";
+    ViewBag.Title = "Thêm sản phẩm";
 }
 
 <main class="container">
     <div class="row">
         <div class="col-md-8">
-            <h1>Sửa sản phẩm</h1>
+            <h1>Thêm sản phẩm</h1>
 
             @using (Html.BeginForm(
-                "EditProduct",
+                "CreateProduct",
                 "Admin",
                 FormMethod.Post,
                 new { @class = "form-horizontal", role = "form" }))
             {
                 @Html.AntiForgeryToken()
-                @Html.HiddenFor(model => model.ProductId)
                 @Html.ValidationSummary(false, "", new { @class = "text-danger" })
 
                 <div class="form-group">
@@ -57,9 +55,8 @@
 
                 <div class="form-group">
                     <label class="control-label" for="Price">Giá</label>
-                    @Html.TextBox(
-                        "Price",
-                        Model.Price.ToString(CultureInfo.InvariantCulture),
+                    @Html.TextBoxFor(
+                        model => model.Price,
                         new
                         {
                             @class = "form-control",
@@ -84,6 +81,38 @@
                         new { @class = "text-danger" })
                 </div>
 
+                <div class="form-group">
+                    <label class="control-label" for="StockQuantity">Tồn kho ban đầu</label>
+                    @Html.TextBoxFor(
+                        model => model.StockQuantity,
+                        new
+                        {
+                            @class = "form-control",
+                            type = "number",
+                            min = "0"
+                        })
+                    @Html.ValidationMessageFor(
+                        model => model.StockQuantity,
+                        "",
+                        new { @class = "text-danger" })
+                </div>
+
+                <div class="form-group">
+                    <label class="control-label" for="ReorderLevel">Ngưỡng nhập lại</label>
+                    @Html.TextBoxFor(
+                        model => model.ReorderLevel,
+                        new
+                        {
+                            @class = "form-control",
+                            type = "number",
+                            min = "0"
+                        })
+                    @Html.ValidationMessageFor(
+                        model => model.ReorderLevel,
+                        "",
+                        new { @class = "text-danger" })
+                </div>
+
                 <div class="checkbox">
                     <label>
                         @Html.CheckBoxFor(model => model.IsActive)
@@ -91,7 +120,7 @@
                     </label>
                 </div>
 
-                <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
+                <button type="submit" class="btn btn-primary">Thêm sản phẩm</button>
                 @Html.ActionLink(
                     "Quay lại",
                     "Products",

@@ -22,6 +22,12 @@
 
     <p>
         @Html.ActionLink(
+            "Thêm sản phẩm",
+            "CreateProduct",
+            "Admin",
+            null,
+            new { @class = "btn btn-primary" })
+        @Html.ActionLink(
             "Quản lý loại đồ uống",
             "Categories",
             "Admin",
@@ -73,6 +79,19 @@
                                     "Admin",
                                     new { id = item.ProductId },
                                     new { @class = "btn btn-default btn-sm" })
+                                @using (Html.BeginForm(
+                                    "DeleteProduct",
+                                    "Admin",
+                                    FormMethod.Post,
+                                    new { style = "display:inline" }))
+                                {
+                                    @Html.AntiForgeryToken()
+                                    @Html.Hidden("productId", item.ProductId)
+                                    <button
+                                        type="submit"
+                                        class="btn btn-danger btn-sm"
+                                        onclick="return confirm('Bạn có chắc muốn xóa sản phẩm này?');">Xóa</button>
+                                }
                             </td>
                         </tr>
                     }
