@@ -1463,7 +1463,7 @@ namespace BeverageWebsite.Controllers
                 var fileName = Guid.NewGuid().ToString("N") + imageExtension.ToLowerInvariant();
                 var physicalPath = Path.Combine(uploadPhysicalDir, fileName);
 
-                // SaveAs will overwrite if exists - but name is GUID so collision is extremely unlikely                
+                // SaveAs will overwrite if exists - but name is GUID so collision is extremely unlikely
                 imageFile.SaveAs(physicalPath);
 
                 if (System.IO.File.Exists(physicalPath))
