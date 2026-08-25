@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Web.Mvc;
 using BeverageWebsite.BLL;
+using BeverageWebsite.Models;
 
 namespace BeverageWebsite.Controllers
 {
@@ -10,6 +12,7 @@ namespace BeverageWebsite.Controllers
     public class NavigationController : Controller
     {
         private readonly UserBLL _userBll;
+        private readonly CategoryBLL _categoryBll;
 
         /// <summary>
         /// Initializes the controller for navigation queries.
@@ -17,6 +20,32 @@ namespace BeverageWebsite.Controllers
         public NavigationController()
         {
             _userBll = new UserBLL();
+            _categoryBll = new CategoryBLL();
+        }
+
+        /// <summary>
+        /// Renders links for the active categories in the public catalog navigation.
+        /// </summary>
+        /// <returns>A partial view containing the catalog navigation links.</returns>
+        [ChildActionOnly]
+        public ActionResult CatalogNavigation()
+        {
+            List<Category> categories;
+
+            try
+            {
+                categories = _categoryBll.GetActive();
+            }
+            catch (ArgumentException)
+            {
+                categories = new List<Category>();
+            }
+            catch (InvalidOperationException)
+            {
+                categories = new List<Category>();
+            }
+
+            return PartialView("_CatalogNavigation", categories);
         }
 
         /// <summary>

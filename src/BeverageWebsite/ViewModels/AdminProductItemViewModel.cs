@@ -34,5 +34,16 @@ namespace BeverageWebsite.ViewModels
         /// Gets or sets a value indicating whether the product is active.
         /// </summary>
         public bool IsActive { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether the product appears in the
+        /// featured section on the home page.
+        /// </summary>
+        public bool IsFeatured { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional merchandising badge.
+        /// </summary>
+        public string BadgeType { get; set; }
     }
 }

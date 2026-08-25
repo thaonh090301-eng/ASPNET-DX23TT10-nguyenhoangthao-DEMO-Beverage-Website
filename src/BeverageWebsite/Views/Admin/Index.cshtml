@@ -4,54 +4,73 @@
     ViewBag.Title = "Quản trị";
 }
 
-<main>
-    <h1>Quản trị cửa hàng</h1>
+<main class="admin-shell admin-dashboard">
+    <header class="admin-page-header">
+        <p class="admin-page-kicker">Tổng quan cửa hàng</p>
+        <h1>Quản trị cửa hàng</h1>
+        <p class="admin-page-lead">
+            Theo dõi nhanh hoạt động kinh doanh và chọn khu vực bạn muốn quản lý.
+        </p>
+    </header>
 
-    <div class="row">
-        <section class="col-sm-3">
-            <div class="panel panel-default">
-                <div class="panel-heading">Danh mục đang hoạt động</div>
-                <div class="panel-body">@Model.ActiveCategoryCount</div>
-            </div>
-        </section>
-        <section class="col-sm-3">
-            <div class="panel panel-default">
-                <div class="panel-heading">Sản phẩm đang bán</div>
-                <div class="panel-body">@Model.ActiveProductCount</div>
-            </div>
-        </section>
-        <section class="col-sm-3">
-            <div class="panel panel-default">
-                <div class="panel-heading">Còn món</div>
-                <div class="panel-body">@Model.InStockProductCount</div>
-            </div>
-        </section>
-        <section class="col-sm-3">
-            <div class="panel panel-default">
-                <div class="panel-heading">Tạm hết món</div>
-                <div class="panel-body">@Model.OutOfStockProductCount</div>
-            </div>
-        </section>
-    </div>
+    <section class="admin-metric-grid" aria-label="Chỉ số cửa hàng">
+        <article class="admin-metric-card admin-metric-card--cream">
+            <span class="admin-metric-card__icon" aria-hidden="true">DM</span>
+            <strong class="admin-metric-card__value">@Model.ActiveCategoryCount</strong>
+            <span class="admin-metric-card__label">Danh mục đang hoạt động</span>
+        </article>
+        <article class="admin-metric-card admin-metric-card--sage">
+            <span class="admin-metric-card__icon" aria-hidden="true">SP</span>
+            <strong class="admin-metric-card__value">@Model.ActiveProductCount</strong>
+            <span class="admin-metric-card__label">Sản phẩm đang bán</span>
+        </article>
+        <article class="admin-metric-card admin-metric-card--pink">
+            <span class="admin-metric-card__icon" aria-hidden="true">+</span>
+            <strong class="admin-metric-card__value">@Model.InStockProductCount</strong>
+            <span class="admin-metric-card__label">Còn món</span>
+        </article>
+        <article class="admin-metric-card admin-metric-card--peach">
+            <span class="admin-metric-card__icon" aria-hidden="true">−</span>
+            <strong class="admin-metric-card__value">@Model.OutOfStockProductCount</strong>
+            <span class="admin-metric-card__label">Tạm hết món</span>
+        </article>
+        <article class="admin-metric-card admin-metric-card--lavender">
+            <span class="admin-metric-card__icon" aria-hidden="true">ĐH</span>
+            <strong class="admin-metric-card__value">@Model.PendingOrderCount</strong>
+            <span class="admin-metric-card__label">Đơn chờ xác nhận</span>
+        </article>
+    </section>
 
-    <p>
-        @Html.ActionLink(
-            "Quản lý sản phẩm",
-            "Products",
-            "Admin",
-            null,
-            new { @class = "btn btn-primary" })
-        @Html.ActionLink(
-            "Quản lý loại đồ uống",
-            "Categories",
-            "Admin",
-            null,
-            new { @class = "btn btn-primary" })
-        @Html.ActionLink(
-            "Quản lý tồn kho",
-            "Inventory",
-            "Admin",
-            null,
-            new { @class = "btn btn-primary" })
-    </p>
+    <section class="admin-dashboard-nav" aria-labelledby="admin-navigation-title">
+        <div class="admin-section-heading">
+            <p class="admin-page-kicker">Lối tắt quản lý</p>
+            <h2 id="admin-navigation-title">Bạn muốn làm gì hôm nay?</h2>
+        </div>
+        <nav class="admin-action-grid" aria-label="Khu vực quản lý">
+            <a class="admin-action-card admin-action-card--sage"
+               href="@Url.Action("Products", "Admin")">
+                <span class="admin-action-card__icon" aria-hidden="true">SP</span>
+                <span class="admin-action-card__title">Quản lý sản phẩm</span>
+                <span class="admin-action-card__arrow" aria-hidden="true">→</span>
+            </a>
+            <a class="admin-action-card admin-action-card--cream"
+               href="@Url.Action("Categories", "Admin")">
+                <span class="admin-action-card__icon" aria-hidden="true">DM</span>
+                <span class="admin-action-card__title">Quản lý loại đồ uống</span>
+                <span class="admin-action-card__arrow" aria-hidden="true">→</span>
+            </a>
+            <a class="admin-action-card admin-action-card--pink"
+               href="@Url.Action("Inventory", "Admin")">
+                <span class="admin-action-card__icon" aria-hidden="true">TK</span>
+                <span class="admin-action-card__title">Quản lý tồn kho</span>
+                <span class="admin-action-card__arrow" aria-hidden="true">→</span>
+            </a>
+            <a class="admin-action-card admin-action-card--peach"
+               href="@Url.Action("Orders", "Admin")">
+                <span class="admin-action-card__icon" aria-hidden="true">ĐH</span>
+                <span class="admin-action-card__title">Quản lý đơn hàng</span>
+                <span class="admin-action-card__arrow" aria-hidden="true">→</span>
+            </a>
+        </nav>
+    </section>
 </main>

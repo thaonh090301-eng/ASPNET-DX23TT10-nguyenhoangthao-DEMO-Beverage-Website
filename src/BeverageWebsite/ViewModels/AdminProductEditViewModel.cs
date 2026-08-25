@@ -35,7 +35,10 @@ namespace BeverageWebsite.ViewModels
         /// Gets or sets the current selling price.
         /// </summary>
         [Required]
-        [Range(typeof(decimal), "0", "9999999999.99")]
+        [Range(
+            0.01d,
+            999999999.99d,
+            ErrorMessage = "Giá sản phẩm phải lớn hơn 0 và không vượt quá giới hạn cho phép.")]
         public decimal Price { get; set; }
 
         /// <summary>
@@ -48,5 +51,20 @@ namespace BeverageWebsite.ViewModels
         /// Gets or sets a value indicating whether the product is active.
         /// </summary>
         public bool IsActive { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether the product appears in the
+        /// featured section on the home page.
+        /// </summary>
+        public bool IsFeatured { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional merchandising badge.
+        /// </summary>
+        [StringLength(20)]
+        [RegularExpression(
+            @"^(Featured|BestSeller|New)?$",
+            ErrorMessage = "Nhãn sản phẩm không hợp lệ.")]
+        public string BadgeType { get; set; }
     }
 }

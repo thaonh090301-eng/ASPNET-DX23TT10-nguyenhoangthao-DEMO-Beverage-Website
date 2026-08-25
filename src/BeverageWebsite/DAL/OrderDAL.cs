@@ -426,6 +426,388 @@ namespace BeverageWebsite.DAL
             return affectedRows;
         }
 
+        /// <summary>
+        /// Atomically changes an order from the expected current status to an allowed next status.
+        /// Cancelling an order restores its inventory within the same transaction.
+        /// </summary>
+        /// <param name="orderId">The order identifier.</param>
+        /// <param name="expectedCurrentStatus">The exact status observed before starting the transition.</param>
+        /// <param name="newStatus">The requested next status.</param>
+        /// <returns>The number of order rows affected.</returns>
+        public int ChangeStatus(
+            int orderId,
+            string expectedCurrentStatus,
+            string newStatus)
+        {
+            if (orderId <= 0)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(orderId),
+                    "Order identifier must be greater than zero.");
+            }
+
+            ValidateCanonicalOrderStatus(
+                expectedCurrentStatus,
+                nameof(expectedCurrentStatus));
+            ValidateCanonicalOrderStatus(newStatus, nameof(newStatus));
+
+            try
+            {
+                return _dataProvider.ExecuteInTransaction<int>((connection, transaction) =>
+                {
+                    var currentStatus = ReadLockedOrderStatus(
+                        connection,
+                        transaction,
+                        orderId);
+
+                    if (!string.Equals(
+                        currentStatus,
+                        expectedCurrentStatus,
+                        StringComparison.Ordinal))
+                    {
+                        throw new InvalidOperationException(
+                            "The order status changed before the transition could be applied.");
+                    }
+
+                    if (!IsAllowedStatusTransition(currentStatus, newStatus))
+                    {
+                        throw new InvalidOperationException(
+                            "The requested order status transition is invalid.");
+                    }
+
+                    if (string.Equals(newStatus, "Cancelled", StringComparison.Ordinal))
+                    {
+                        if (!string.Equals(currentStatus, "Pending", StringComparison.Ordinal)
+                            && !string.Equals(currentStatus, "Confirmed", StringComparison.Ordinal))
+                        {
+                            throw new InvalidOperationException(
+                                "The order cannot be cancelled from its current status.");
+                        }
+
+                        EnsureNoPaymentOrShipment(
+                            connection,
+                            transaction,
+                            orderId);
+
+                        var quantitiesToRestore = ReadLockedCancellationQuantities(
+                            connection,
+                            transaction,
+                            orderId);
+
+                        if (quantitiesToRestore.Count == 0)
+                        {
+                            throw new InvalidOperationException(
+                                "The order does not contain any items.");
+                        }
+
+                        ValidateAndLockInventoryRows(
+                            connection,
+                            transaction,
+                            quantitiesToRestore);
+
+                        var restorationTime = DateTime.UtcNow;
+
+                        foreach (var quantityToRestore in quantitiesToRestore)
+                        {
+                            RestoreInventory(
+                                connection,
+                                transaction,
+                                quantityToRestore.Key,
+                                quantityToRestore.Value,
+                                restorationTime);
+                        }
+                    }
+
+                    return UpdateOrderStatusConditionally(
+                        connection,
+                        transaction,
+                        orderId,
+                        expectedCurrentStatus,
+                        newStatus);
+                }, IsolationLevel.Serializable);
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException(
+                    "Failed to change the order status.",
+                    ex);
+            }
+        }
+
+        private static string ReadLockedOrderStatus(
+            SqlConnection connection,
+            SqlTransaction transaction,
+            int orderId)
+        {
+            const string sql = @"SELECT O.OrderStatus
+                                 FROM dbo.[Order] AS O WITH (UPDLOCK, HOLDLOCK)
+                                 WHERE O.OrderId = @OrderId";
+
+            using (var command = new SqlCommand(sql, connection, transaction))
+            {
+                command.Parameters.Add(
+                    new SqlParameter("@OrderId", SqlDbType.Int) { Value = orderId });
+
+                var result = command.ExecuteScalar();
+                if (result == null || result == DBNull.Value)
+                {
+                    throw new InvalidOperationException("The order was not found.");
+                }
+
+                return Convert.ToString(result);
+            }
+        }
+
+        private static void EnsureNoPaymentOrShipment(
+            SqlConnection connection,
+            SqlTransaction transaction,
+            int orderId)
+        {
+            const string paymentSql = @"SELECT TOP (1) P.PaymentId
+                                        FROM dbo.Payment AS P WITH (UPDLOCK, HOLDLOCK)
+                                        WHERE P.OrderId = @OrderId";
+
+            using (var command = new SqlCommand(paymentSql, connection, transaction))
+            {
+                command.Parameters.Add(
+                    new SqlParameter("@OrderId", SqlDbType.Int) { Value = orderId });
+
+                if (command.ExecuteScalar() != null)
+                {
+                    throw new InvalidOperationException(
+                        "The order has related payment information.");
+                }
+            }
+
+            const string shipmentSql = @"SELECT TOP (1) S.ShipmentId
+                                         FROM dbo.Shipment AS S WITH (UPDLOCK, HOLDLOCK)
+                                         WHERE S.OrderId = @OrderId";
+
+            using (var command = new SqlCommand(shipmentSql, connection, transaction))
+            {
+                command.Parameters.Add(
+                    new SqlParameter("@OrderId", SqlDbType.Int) { Value = orderId });
+
+                if (command.ExecuteScalar() != null)
+                {
+                    throw new InvalidOperationException(
+                        "The order has related shipment information.");
+                }
+            }
+        }
+
+        private static List<KeyValuePair<int, int>> ReadLockedCancellationQuantities(
+            SqlConnection connection,
+            SqlTransaction transaction,
+            int orderId)
+        {
+            var quantityByProductId = new SortedDictionary<int, int>();
+            const string sql = @"SELECT OI.ProductId, OI.Quantity
+                                 FROM dbo.OrderItem AS OI WITH (UPDLOCK, HOLDLOCK)
+                                 WHERE OI.OrderId = @OrderId
+                                 ORDER BY OI.ProductId ASC, OI.OrderItemId ASC";
+
+            using (var command = new SqlCommand(sql, connection, transaction))
+            {
+                command.Parameters.Add(
+                    new SqlParameter("@OrderId", SqlDbType.Int) { Value = orderId });
+
+                using (var reader = command.ExecuteReader())
+                {
+                    var productIdOrdinal = reader.GetOrdinal("ProductId");
+                    var quantityOrdinal = reader.GetOrdinal("Quantity");
+
+                    while (reader.Read())
+                    {
+                        if (reader.IsDBNull(productIdOrdinal)
+                            || reader.IsDBNull(quantityOrdinal))
+                        {
+                            throw new InvalidOperationException(
+                                "An order item has invalid inventory information.");
+                        }
+
+                        var productId = reader.GetInt32(productIdOrdinal);
+                        var quantity = reader.GetInt32(quantityOrdinal);
+
+                        if (productId <= 0 || quantity <= 0)
+                        {
+                            throw new InvalidOperationException(
+                                "An order item has invalid inventory information.");
+                        }
+
+                        int currentQuantity;
+                        quantityByProductId.TryGetValue(
+                            productId,
+                            out currentQuantity);
+
+                        try
+                        {
+                            quantityByProductId[productId] = checked(
+                                currentQuantity + quantity);
+                        }
+                        catch (OverflowException ex)
+                        {
+                            throw new InvalidOperationException(
+                                "An order item quantity exceeds the supported range.",
+                                ex);
+                        }
+                    }
+                }
+            }
+
+            return new List<KeyValuePair<int, int>>(quantityByProductId);
+        }
+
+        private static void ValidateAndLockInventoryRows(
+            SqlConnection connection,
+            SqlTransaction transaction,
+            IEnumerable<KeyValuePair<int, int>> quantitiesToRestore)
+        {
+            const string sql = @"SELECT I.StockQuantity
+                                 FROM dbo.Inventory AS I WITH (UPDLOCK, HOLDLOCK)
+                                 WHERE I.ProductId = @ProductId";
+
+            foreach (var quantityToRestore in quantitiesToRestore)
+            {
+                using (var command = new SqlCommand(sql, connection, transaction))
+                {
+                    command.Parameters.Add(
+                        new SqlParameter("@ProductId", SqlDbType.Int)
+                        {
+                            Value = quantityToRestore.Key
+                        });
+
+                    var result = command.ExecuteScalar();
+                    if (result == null || result == DBNull.Value)
+                    {
+                        throw new InvalidOperationException(
+                            "Inventory information is unavailable for an order item.");
+                    }
+
+                    var stockQuantity = Convert.ToInt32(result);
+                    if (stockQuantity < 0
+                        || (long)stockQuantity + quantityToRestore.Value > int.MaxValue)
+                    {
+                        throw new InvalidOperationException(
+                            "Inventory cannot be restored for an order item.");
+                    }
+                }
+            }
+        }
+
+        private static void RestoreInventory(
+            SqlConnection connection,
+            SqlTransaction transaction,
+            int productId,
+            int quantity,
+            DateTime lastUpdatedAt)
+        {
+            const string sql = @"UPDATE dbo.Inventory
+                                 SET StockQuantity = StockQuantity + @Quantity,
+                                     LastUpdatedAt = @LastUpdatedAt
+                                 WHERE ProductId = @ProductId";
+
+            using (var command = new SqlCommand(sql, connection, transaction))
+            {
+                command.Parameters.Add(
+                    new SqlParameter("@ProductId", SqlDbType.Int) { Value = productId });
+                command.Parameters.Add(
+                    new SqlParameter("@Quantity", SqlDbType.Int) { Value = quantity });
+                command.Parameters.Add(
+                    CreateDateTime2Parameter("@LastUpdatedAt", lastUpdatedAt));
+
+                if (command.ExecuteNonQuery() != 1)
+                {
+                    throw new InvalidOperationException(
+                        "Inventory could not be restored for an order item.");
+                }
+            }
+        }
+
+        private static int UpdateOrderStatusConditionally(
+            SqlConnection connection,
+            SqlTransaction transaction,
+            int orderId,
+            string expectedCurrentStatus,
+            string newStatus)
+        {
+            const string sql = @"UPDATE dbo.[Order]
+                                 SET OrderStatus = @NewStatus
+                                 WHERE OrderId = @OrderId
+                                   AND OrderStatus = @ExpectedCurrentStatus";
+
+            using (var command = new SqlCommand(sql, connection, transaction))
+            {
+                command.Parameters.Add(
+                    new SqlParameter("@OrderId", SqlDbType.Int) { Value = orderId });
+                command.Parameters.Add(
+                    new SqlParameter("@ExpectedCurrentStatus", SqlDbType.NVarChar, OrderStatusMaxLength)
+                    {
+                        Value = expectedCurrentStatus
+                    });
+                command.Parameters.Add(
+                    new SqlParameter("@NewStatus", SqlDbType.NVarChar, OrderStatusMaxLength)
+                    {
+                        Value = newStatus
+                    });
+
+                var affectedRows = command.ExecuteNonQuery();
+                if (affectedRows != 1)
+                {
+                    throw new InvalidOperationException(
+                        "The order status changed before the transition could be completed.");
+                }
+
+                return affectedRows;
+            }
+        }
+
+        private static bool IsAllowedStatusTransition(
+            string currentStatus,
+            string newStatus)
+        {
+            if (string.Equals(currentStatus, "Pending", StringComparison.Ordinal))
+            {
+                return string.Equals(newStatus, "Confirmed", StringComparison.Ordinal)
+                    || string.Equals(newStatus, "Cancelled", StringComparison.Ordinal);
+            }
+
+            if (string.Equals(currentStatus, "Confirmed", StringComparison.Ordinal))
+            {
+                return string.Equals(newStatus, "Processing", StringComparison.Ordinal)
+                    || string.Equals(newStatus, "Cancelled", StringComparison.Ordinal);
+            }
+
+            if (string.Equals(currentStatus, "Processing", StringComparison.Ordinal))
+            {
+                return string.Equals(newStatus, "Completed", StringComparison.Ordinal);
+            }
+
+            return false;
+        }
+
+        private static void ValidateCanonicalOrderStatus(
+            string status,
+            string parameterName)
+        {
+            if (string.IsNullOrWhiteSpace(status))
+            {
+                throw new ArgumentException("Order status is required.", parameterName);
+            }
+
+            if (status.Length > OrderStatusMaxLength)
+            {
+                throw new ArgumentException(
+                    "Order status exceeds the allowed maximum length.",
+                    parameterName);
+            }
+
+            if (!AllowedOrderStatuses.Contains(status))
+            {
+                throw new ArgumentException("Order status is invalid.", parameterName);
+            }
+        }
+
         private static int? GetCartUserId(SqlConnection connection, SqlTransaction transaction, int cartId)
         {
             const string sql = @"SELECT UserId

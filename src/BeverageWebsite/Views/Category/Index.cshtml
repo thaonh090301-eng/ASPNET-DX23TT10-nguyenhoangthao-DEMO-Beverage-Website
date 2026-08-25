@@ -5,54 +5,90 @@
     ViewBag.Title = "Danh mục sản phẩm";
 }
 
-<main>
-    <h1>Danh mục sản phẩm</h1>
+<main class="public-shell category-page">
+    <header class="public-page-header">
+        <p class="public-page-header__eyebrow">Khám phá theo sở thích</p>
+        <h1>Danh mục sản phẩm</h1>
+        <p class="public-page-header__lead">
+            Chọn một nhóm đồ uống phù hợp với tâm trạng của bạn hôm nay.
+        </p>
+    </header>
 
     @if (Model == null || !Model.Any())
     {
-        <p>Hiện chưa có danh mục sản phẩm.</p>
+        <section class="public-empty-state" aria-labelledby="empty-category-title">
+            <span class="public-empty-state__icon" aria-hidden="true">☕</span>
+            <h2 id="empty-category-title">Danh mục đang được chuẩn bị</h2>
+            <p>Hiện chưa có danh mục sản phẩm. Mời bạn quay lại sau nhé.</p>
+        </section>
     }
     else
     {
-        <div class="table-responsive">
-            <table class="table table-striped table-bordered">
-                <thead>
-                    <tr>
-                        <th scope="col">Tên danh mục</th>
-                        <th scope="col">Mô tả</th>
-                        <th scope="col">Trạng thái</th>
-                        <th scope="col">Chi tiết</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var category in Model)
-                    {
-                        <tr>
-                            <td>@category.CategoryName</td>
-                            <td>
-                                @(string.IsNullOrWhiteSpace(category.Description)
-                                    ? "Không có mô tả."
-                                    : category.Description)
-                            </td>
-                            <td>@(category.IsActive ? "Hoạt động" : "Không hoạt động")</td>
-                            <td>
+        var categoryIndex = 0;
+
+        <div class="category-card-grid">
+            @foreach (var category in Model)
+            {
+                var toneClass = "category-card--cream";
+
+                switch (categoryIndex % 4)
+                {
+                    case 1:
+                        toneClass = "category-card--sage";
+                        break;
+                    case 2:
+                        toneClass = "category-card--pink";
+                        break;
+                    case 3:
+                        toneClass = "category-card--peach";
+                        break;
+                }
+
+                <article class="category-card @toneClass">
+                    <span class="category-card__icon" aria-hidden="true">☕</span>
+
+                    <div class="category-card__content">
+                        <div class="category-card__heading">
+                            <h2>
                                 @Html.ActionLink(
-                                    "Xem chi tiết",
+                                    category.CategoryName,
                                     "Details",
                                     "Category",
                                     new { id = category.CategoryId },
-                                    new { @class = "btn btn-default btn-sm" })
-                                @Html.ActionLink(
-                                    "Xem sản phẩm",
-                                    "Index",
-                                    "Product",
-                                    new { categoryId = category.CategoryId },
-                                    new { @class = "btn btn-primary btn-sm" })
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
+                                    new { @class = "category-card__title-link" })
+                            </h2>
+
+                            @if (category.IsActive)
+                            {
+                                <span class="category-card__status status-chip status-chip--completed">
+                                    Đang phục vụ
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="category-card__status status-chip status-chip--neutral">
+                                    Tạm ẩn
+                                </span>
+                            }
+                        </div>
+
+                        <p class="category-card__description">
+                            @(string.IsNullOrWhiteSpace(category.Description)
+                                ? "Một góc hương vị đang chờ bạn khám phá."
+                                : category.Description)
+                        </p>
+                    </div>
+
+                    @Html.ActionLink(
+                        "Xem các món",
+                        "Index",
+                        "Product",
+                        new { categoryId = category.CategoryId },
+                        new { @class = "btn btn-primary category-card__action" })
+                </article>
+
+                categoryIndex++;
+            }
         </div>
     }
 </main>

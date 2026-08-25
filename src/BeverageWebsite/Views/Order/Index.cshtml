@@ -1,95 +1,128 @@
 @model BeverageWebsite.ViewModels.OrderHistoryViewModel
+@using BeverageWebsite.Helpers
 
 @{
     ViewBag.Title = "Đơn hàng của tôi";
 }
 
-<main class="container">
-    <h1>Đơn hàng của tôi</h1>
+<main class="container public-shell order-history-page">
+    <header class="public-page-header">
+        <p class="public-page-header__eyebrow">Hành trình của từng món ngon</p>
+        <h1>Đơn hàng của tôi</h1>
+        <p class="public-page-header__lead">
+            Theo dõi trạng thái và xem lại những đơn hàng bạn đã đặt.
+        </p>
+    </header>
 
     @if (Model == null)
     {
-        <p>Không thể hiển thị lịch sử đơn hàng.</p>
+        <section class="public-empty-state" aria-labelledby="orders-unavailable-title">
+            <span class="public-empty-state__icon" aria-hidden="true">🧾</span>
+            <h2 id="orders-unavailable-title">Chưa thể tải đơn hàng</h2>
+            <p>Không thể hiển thị lịch sử đơn hàng lúc này. Bạn vui lòng thử lại sau.</p>
+        </section>
     }
     else if (Model.Orders == null || Model.Orders.Count == 0)
     {
-        <p>Bạn chưa có đơn hàng nào.</p>
-        <p>
-            @Html.ActionLink(
-                "Tiếp tục mua sắm",
-                "Index",
-                "Product",
-                null,
-                new { @class = "btn btn-primary" })
-        </p>
+        <section class="public-empty-state" aria-labelledby="empty-orders-title">
+            <span class="public-empty-state__icon" aria-hidden="true">🧾</span>
+            <h2 id="empty-orders-title">Chưa có đơn hàng nào</h2>
+            <p>Chọn một thức uống yêu thích và đơn hàng đầu tiên sẽ xuất hiện tại đây.</p>
+            <div class="public-empty-state__actions">
+                @Html.ActionLink(
+                    "Tiếp tục mua sắm",
+                    "Index",
+                    "Product",
+                    null,
+                    new { @class = "btn btn-primary" })
+            </div>
+        </section>
     }
     else
     {
-        <div class="table-responsive">
-            <table class="table table-striped table-bordered">
-                <thead>
-                    <tr>
-                        <th scope="col">Mã đơn</th>
-                        <th scope="col">Ngày đặt</th>
-                        <th scope="col">Trạng thái</th>
-                        <th scope="col">Tiền hàng</th>
-                        <th scope="col">Phí giao hàng</th>
-                        <th scope="col">Tổng thanh toán</th>
-                        <th scope="col">Thao tác</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var order in Model.Orders)
-                    {
-                        var statusLabel = "Không xác định";
+        <div class="order-card-grid">
+            @foreach (var order in Model.Orders)
+            {
+                var vietnamOrderDate = VietnamTimeHelper.FromUtc(order.OrderDate);
+                var statusLabel = "Không xác định";
+                var statusClass = "status-chip--neutral";
 
-                        switch (order.OrderStatus)
-                        {
-                            case "Pending":
-                                statusLabel = "Chờ xác nhận";
-                                break;
-                            case "Confirmed":
-                                statusLabel = "Đã xác nhận";
-                                break;
-                            case "Processing":
-                                statusLabel = "Đang xử lý";
-                                break;
-                            case "Completed":
-                                statusLabel = "Hoàn thành";
-                                break;
-                            case "Cancelled":
-                                statusLabel = "Đã hủy";
-                                break;
-                        }
+                switch (order.OrderStatus)
+                {
+                    case "Pending":
+                        statusLabel = "Chờ xác nhận";
+                        statusClass = "status-chip--pending";
+                        break;
+                    case "Confirmed":
+                        statusLabel = "Đã xác nhận";
+                        statusClass = "status-chip--confirmed";
+                        break;
+                    case "Processing":
+                        statusLabel = "Đang chuẩn bị";
+                        statusClass = "status-chip--processing";
+                        break;
+                    case "Completed":
+                        statusLabel = "Hoàn thành";
+                        statusClass = "status-chip--completed";
+                        break;
+                    case "Cancelled":
+                        statusLabel = "Đã hủy";
+                        statusClass = "status-chip--cancelled";
+                        break;
+                }
 
-                        <tr>
-                            <td>#@order.OrderId</td>
-                            <td>@order.OrderDate.ToString("dd/MM/yyyy HH:mm")</td>
-                            <td>@statusLabel</td>
-                            <td>@(order.TotalAmount.ToString("N0") + " đ")</td>
-                            <td>@(order.ShippingFee.ToString("N0") + " đ")</td>
-                            <td>@(order.FinalAmount.ToString("N0") + " đ")</td>
-                            <td>
-                                @Html.ActionLink(
-                                    "Xem chi tiết",
-                                    "Details",
-                                    "Order",
-                                    new { id = order.OrderId },
-                                    new { @class = "btn btn-info btn-sm" })
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
+                <article class="order-card">
+                    <header class="order-card__header">
+                        <div class="order-card__identity">
+                            <span class="order-card__eyebrow">Mã đơn</span>
+                            <h2 class="order-card__number">#@order.OrderId</h2>
+                            <time class="order-card__date" datetime="@vietnamOrderDate.ToString("yyyy-MM-ddTHH:mm:ss")">
+                                @vietnamOrderDate.ToString("dd/MM/yyyy HH:mm")
+                            </time>
+                        </div>
+                        <span class="status-chip @statusClass">@statusLabel</span>
+                    </header>
+
+                    <div class="order-card__body">
+                        <div class="order-card__amount">
+                            <span class="order-card__amount-label">Tiền hàng</span>
+                            <strong class="order-card__amount-value">
+                                @(order.TotalAmount.ToString("N0") + " đ")
+                            </strong>
+                        </div>
+                        <div class="order-card__amount">
+                            <span class="order-card__amount-label">Phí giao hàng</span>
+                            <strong class="order-card__amount-value">
+                                @(order.ShippingFee.ToString("N0") + " đ")
+                            </strong>
+                        </div>
+                        <div class="order-card__amount order-card__amount--total">
+                            <span class="order-card__amount-label">Tổng thanh toán</span>
+                            <strong class="order-card__amount-value">
+                                @(order.FinalAmount.ToString("N0") + " đ")
+                            </strong>
+                        </div>
+                    </div>
+
+                    <footer class="order-card__footer">
+                        @Html.ActionLink(
+                            "Xem chi tiết",
+                            "Details",
+                            "Order",
+                            new { id = order.OrderId },
+                            new { @class = "btn btn-default" })
+                    </footer>
+                </article>
+            }
         </div>
 
-        <p>
+        <div class="order-history-actions">
             @Html.ActionLink(
                 "Tiếp tục mua sắm",
                 "Index",
                 "Product",
                 null,
                 new { @class = "btn btn-default" })
-        </p>
+        </div>
     }
 </main>

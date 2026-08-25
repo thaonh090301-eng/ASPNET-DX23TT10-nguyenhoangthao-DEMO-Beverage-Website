@@ -1,118 +1,172 @@
 @model BeverageWebsite.ViewModels.OrderDetailsViewModel
+@using BeverageWebsite.Helpers
 
 @{
     ViewBag.Title = "Chi tiết đơn hàng";
 }
 
-<main class="container">
-    <h1>Chi tiết đơn hàng</h1>
-
+<main class="container public-shell order-details-page">
     @if (Model == null)
     {
-        <p>Không thể hiển thị chi tiết đơn hàng.</p>
+        <header class="public-page-header">
+            <p class="public-page-header__eyebrow">Thông tin đơn hàng</p>
+            <h1>Chi tiết đơn hàng</h1>
+        </header>
+
+        <section class="public-empty-state" aria-labelledby="order-unavailable-title">
+            <span class="public-empty-state__icon" aria-hidden="true">🧾</span>
+            <h2 id="order-unavailable-title">Chưa thể mở đơn hàng</h2>
+            <p>Không thể hiển thị chi tiết đơn hàng lúc này.</p>
+        </section>
     }
     else
     {
+        var vietnamOrderDate = VietnamTimeHelper.FromUtc(Model.OrderDate);
         var statusLabel = "Không xác định";
+        var statusClass = "status-chip--neutral";
 
         switch (Model.OrderStatus)
         {
             case "Pending":
                 statusLabel = "Chờ xác nhận";
+                statusClass = "status-chip--pending";
                 break;
             case "Confirmed":
                 statusLabel = "Đã xác nhận";
+                statusClass = "status-chip--confirmed";
                 break;
             case "Processing":
-                statusLabel = "Đang xử lý";
+                statusLabel = "Đang chuẩn bị";
+                statusClass = "status-chip--processing";
                 break;
             case "Completed":
                 statusLabel = "Hoàn thành";
+                statusClass = "status-chip--completed";
                 break;
             case "Cancelled":
                 statusLabel = "Đã hủy";
+                statusClass = "status-chip--cancelled";
                 break;
         }
 
-        <dl class="dl-horizontal">
-            <dt>Mã đơn</dt>
-            <dd>#@Model.OrderId</dd>
+        <div class="order-details-layout">
+            <section class="order-details-card order-details-card--header">
+                <div class="order-details-header">
+                    <div class="order-details-header__identity">
+                        <p class="order-details-header__eyebrow">Mã đơn #@Model.OrderId</p>
+                        <h1 class="order-details-header__title">Chi tiết đơn hàng</h1>
+                        <time class="order-details-header__date" datetime="@vietnamOrderDate.ToString("yyyy-MM-ddTHH:mm:ss")">
+                            Đặt lúc @vietnamOrderDate.ToString("dd/MM/yyyy HH:mm")
+                        </time>
+                    </div>
+                    <span class="status-chip @statusClass">@statusLabel</span>
+                </div>
+            </section>
 
-            <dt>Ngày đặt</dt>
-            <dd>@Model.OrderDate.ToString("dd/MM/yyyy HH:mm")</dd>
+            <section class="order-details-card order-details-card--delivery" aria-labelledby="delivery-note-title">
+                <div class="delivery-note">
+                    <span class="delivery-note__icon" aria-hidden="true">🚚</span>
+                    <div class="delivery-note__content">
+                        <h2 id="delivery-note-title">Thông tin giao nhận</h2>
+                        <p>
+                            Thông tin người nhận và địa chỉ giao hàng được giữ theo lựa chọn
+                            bạn đã xác nhận khi thanh toán.
+                        </p>
+                    </div>
+                </div>
+            </section>
 
-            <dt>Trạng thái</dt>
-            <dd>@statusLabel</dd>
+            <section class="order-details-card order-details-card--items" aria-labelledby="ordered-items-title">
+                <h2 id="ordered-items-title">Sản phẩm đã đặt</h2>
 
-            <dt>Tiền hàng</dt>
-            <dd>@(Model.TotalAmount.ToString("N0") + " đ")</dd>
-
-            <dt>Phí giao hàng</dt>
-            <dd>@(Model.ShippingFee.ToString("N0") + " đ")</dd>
-
-            <dt>Tổng thanh toán</dt>
-            <dd>@(Model.FinalAmount.ToString("N0") + " đ")</dd>
-        </dl>
-
-        <h2>Sản phẩm đã đặt</h2>
-
-        if (Model.Items == null || Model.Items.Count == 0)
-        {
-            <p>Không có thông tin sản phẩm trong đơn hàng.</p>
-        }
-        else
-        {
-            <div class="table-responsive">
-                <table class="table table-striped table-bordered">
-                    <thead>
-                        <tr>
-                            <th scope="col">Ảnh</th>
-                            <th scope="col">Sản phẩm</th>
-                            <th scope="col">Đơn giá</th>
-                            <th scope="col">Số lượng</th>
-                            <th scope="col">Giảm giá</th>
-                            <th scope="col">Thành tiền</th>
-                        </tr>
-                    </thead>
-                    <tbody>
+                @if (Model.Items == null || Model.Items.Count == 0)
+                {
+                    <p class="order-items-empty">Không có thông tin sản phẩm trong đơn hàng.</p>
+                }
+                else
+                {
+                    <div class="order-item-list">
                         @foreach (var item in Model.Items)
                         {
                             var productName = string.IsNullOrWhiteSpace(item.ProductName)
                                 ? "Sản phẩm không khả dụng"
                                 : item.ProductName;
 
-                            <tr>
-                                <td>
+                            <article class="order-item-card">
+                                <div class="order-item-card__media">
                                     @if (string.IsNullOrWhiteSpace(item.ImageUrl))
                                     {
-                                        <span>Chưa có ảnh</span>
+                                        <span class="order-item-card__placeholder" aria-label="Chưa có ảnh">☕</span>
                                     }
                                     else
                                     {
                                         <img src="@Url.Content(item.ImageUrl)"
                                              alt="@productName"
-                                             class="img-responsive" />
+                                             class="img-responsive order-item-card__image" />
                                     }
-                                </td>
-                                <td>@productName</td>
-                                <td>@(item.UnitPrice.ToString("N0") + " đ")</td>
-                                <td>@item.Quantity</td>
-                                <td>@(item.DiscountAmount.ToString("N0") + " đ")</td>
-                                <td>@(item.LineTotal.ToString("N0") + " đ")</td>
-                            </tr>
+                                </div>
+
+                                <div class="order-item-card__content">
+                                    <h3 class="order-item-card__name">@productName</h3>
+
+                                    <div class="order-item-card__facts">
+                                        <div class="order-item-card__fact">
+                                            <span class="order-item-card__label">Đơn giá đã lưu</span>
+                                            <strong class="order-item-card__value">
+                                                @(item.UnitPrice.ToString("N0") + " đ")
+                                            </strong>
+                                        </div>
+                                        <div class="order-item-card__fact">
+                                            <span class="order-item-card__label">Số lượng</span>
+                                            <strong class="order-item-card__value">@item.Quantity</strong>
+                                        </div>
+                                        <div class="order-item-card__fact">
+                                            <span class="order-item-card__label">Giảm giá</span>
+                                            <strong class="order-item-card__value">
+                                                @(item.DiscountAmount.ToString("N0") + " đ")
+                                            </strong>
+                                        </div>
+                                        <div class="order-item-card__fact order-item-card__line-total">
+                                            <span class="order-item-card__label">Thành tiền</span>
+                                            <strong class="order-item-card__value">
+                                                @(item.LineTotal.ToString("N0") + " đ")
+                                            </strong>
+                                        </div>
+                                    </div>
+                                </div>
+                            </article>
                         }
-                    </tbody>
-                </table>
-            </div>
-        }
+                    </div>
+                }
+            </section>
+
+            <aside class="order-details-card order-details-card--summary" aria-labelledby="order-summary-title">
+                <h2 id="order-summary-title">Tổng thanh toán</h2>
+
+                <div class="order-summary-list">
+                    <div class="order-summary-list__row">
+                        <span>Tiền hàng</span>
+                        <strong>@(Model.TotalAmount.ToString("N0") + " đ")</strong>
+                    </div>
+                    <div class="order-summary-list__row">
+                        <span>Phí giao hàng</span>
+                        <strong>@(Model.ShippingFee.ToString("N0") + " đ")</strong>
+                    </div>
+                    <div class="order-summary-list__row order-summary-list__total">
+                        <span>Tổng thanh toán</span>
+                        <strong>@(Model.FinalAmount.ToString("N0") + " đ")</strong>
+                    </div>
+                </div>
+            </aside>
+        </div>
     }
 
-    <p>
+    <div class="order-details-actions">
         @Html.ActionLink(
             "Quay lại đơn hàng của tôi",
             "Index",
             "Order",
             null,
             new { @class = "btn btn-default" })
-    </p>
+    </div>
 </main>

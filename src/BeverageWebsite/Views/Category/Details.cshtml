@@ -4,36 +4,49 @@
     ViewBag.Title = "Chi tiết danh mục";
 }
 
-<main>
-    <h1>Chi tiết danh mục</h1>
+<main class="public-shell category-detail-page">
+    <section class="category-intro-card">
+        <div class="category-intro-card__decoration" aria-hidden="true">
+            <span>☕</span>
+        </div>
 
-    <dl class="dl-horizontal">
-        <dt>Tên danh mục</dt>
-        <dd>@Model.CategoryName</dd>
+        <div class="category-intro-card__content">
+            <p class="public-page-header__eyebrow">Một góc hương vị dành cho bạn</p>
+            <h1>@Model.CategoryName</h1>
+            <p class="category-intro-card__description">
+                @(string.IsNullOrWhiteSpace(Model.Description)
+                    ? "Một nhóm đồ uống thú vị đang chờ bạn khám phá."
+                    : Model.Description)
+            </p>
 
-        <dt>Mô tả</dt>
-        <dd>
-            @(string.IsNullOrWhiteSpace(Model.Description)
-                ? "Không có mô tả."
-                : Model.Description)
-        </dd>
+            @if (Model.IsActive)
+            {
+                <span class="category-card__status status-chip status-chip--completed">
+                    Đang phục vụ
+                </span>
+            }
+            else
+            {
+                <span class="category-card__status status-chip status-chip--neutral">
+                    Tạm ẩn
+                </span>
+            }
 
-        <dt>Trạng thái</dt>
-        <dd>@(Model.IsActive ? "Hoạt động" : "Không hoạt động")</dd>
-    </dl>
+            <div class="category-intro-card__actions">
+                @Html.ActionLink(
+                    "Xem các món trong danh mục",
+                    "Index",
+                    "Product",
+                    new { categoryId = Model.CategoryId },
+                    new { @class = "btn btn-primary" })
 
-    <p>
-        @Html.ActionLink(
-            "Xem sản phẩm thuộc danh mục",
-            "Index",
-            "Product",
-            new { categoryId = Model.CategoryId },
-            new { @class = "btn btn-primary" })
-        @Html.ActionLink(
-            "Quay lại danh sách",
-            "Index",
-            "Category",
-            null,
-            new { @class = "btn btn-default" })
-    </p>
+                @Html.ActionLink(
+                    "Quay lại danh mục",
+                    "Index",
+                    "Category",
+                    null,
+                    new { @class = "btn btn-default" })
+            </div>
+        </div>
+    </section>
 </main>

@@ -1,0 +1,290 @@
+@using System.Collections.Generic
+@model BeverageWebsite.ViewModels.AdminOrderDetailsViewModel
+
+@{
+    ViewBag.Title = "Chi tiết đơn hàng";
+    var successMessage = TempData["SuccessMessage"] as string;
+    var errorMessage = TempData["ErrorMessage"] as string;
+}
+
+<main class="admin-shell admin-order-details">
+    <header class="admin-page-header">
+        <p class="admin-page-kicker">Hồ sơ đơn hàng</p>
+        <h1>Chi tiết đơn hàng</h1>
+        <p class="admin-page-lead">
+            Kiểm tra thông tin giao hàng, sản phẩm và các bước xử lý còn khả dụng.
+        </p>
+    </header>
+
+    @if (!string.IsNullOrWhiteSpace(successMessage))
+    {
+        <div class="alert alert-success">@successMessage</div>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(errorMessage))
+    {
+        <div class="alert alert-danger">@errorMessage</div>
+    }
+
+    @if (Model == null)
+    {
+        <section class="admin-empty-state">
+            <span class="admin-empty-state__icon" aria-hidden="true">ĐH</span>
+            <h2>Không thể hiển thị chi tiết đơn hàng</h2>
+            <p>Vui lòng quay lại danh sách và thử chọn đơn hàng khác.</p>
+        </section>
+    }
+    else
+    {
+        var addressParts = new List<string>();
+
+        if (!string.IsNullOrWhiteSpace(Model.Street))
+        {
+            addressParts.Add(Model.Street);
+        }
+
+        if (!string.IsNullOrWhiteSpace(Model.Ward))
+        {
+            addressParts.Add(Model.Ward);
+        }
+
+        if (!string.IsNullOrWhiteSpace(Model.District))
+        {
+            addressParts.Add(Model.District);
+        }
+
+        if (!string.IsNullOrWhiteSpace(Model.City))
+        {
+            addressParts.Add(Model.City);
+        }
+
+        var deliveryAddress = addressParts.Count == 0
+            ? "Không xác định"
+            : string.Join(", ", addressParts);
+        var statusClass = "status-chip--neutral";
+
+        if (Model.OrderStatus == "Pending")
+        {
+            statusClass = "status-chip--pending";
+        }
+        else if (Model.OrderStatus == "Confirmed")
+        {
+            statusClass = "status-chip--confirmed";
+        }
+        else if (Model.OrderStatus == "Processing")
+        {
+            statusClass = "status-chip--processing";
+        }
+        else if (Model.OrderStatus == "Completed")
+        {
+            statusClass = "status-chip--completed";
+        }
+        else if (Model.OrderStatus == "Cancelled")
+        {
+            statusClass = "status-chip--cancelled";
+        }
+
+        <section class="admin-order-header" aria-labelledby="admin-order-number">
+            <div>
+                <p class="admin-page-kicker">Đơn hàng</p>
+                <h2 id="admin-order-number">#@Model.OrderId</h2>
+                <p class="admin-order-header__date">
+                    Đặt lúc @Model.OrderDate.ToString("dd/MM/yyyy HH:mm")
+                </p>
+            </div>
+            <span class="status-chip @statusClass">@Model.OrderStatusDisplayName</span>
+        </section>
+
+        <div class="admin-details-grid">
+            <section class="admin-info-card" aria-labelledby="customer-information-title">
+                <p class="admin-info-card__eyebrow">Khách hàng</p>
+                <h2 id="customer-information-title">Thông tin khách hàng</h2>
+                <dl class="admin-info-list">
+                    <div>
+                        <dt>Họ tên</dt>
+                        <dd>@Model.CustomerName</dd>
+                    </div>
+                    <div>
+                        <dt>Email</dt>
+                        <dd>@Model.CustomerEmail</dd>
+                    </div>
+                    <div>
+                        <dt>Số điện thoại</dt>
+                        <dd>@Model.CustomerPhone</dd>
+                    </div>
+                </dl>
+            </section>
+
+            <section class="admin-info-card" aria-labelledby="delivery-information-title">
+                <p class="admin-info-card__eyebrow">Giao hàng</p>
+                <h2 id="delivery-information-title">Thông tin giao hàng</h2>
+                <dl class="admin-info-list">
+                    <div>
+                        <dt>Người nhận</dt>
+                        <dd>@Model.RecipientName</dd>
+                    </div>
+                    <div>
+                        <dt>Số điện thoại</dt>
+                        <dd>@Model.RecipientPhone</dd>
+                    </div>
+                    <div>
+                        <dt>Địa chỉ</dt>
+                        <dd>@deliveryAddress</dd>
+                    </div>
+                </dl>
+            </section>
+        </div>
+
+        <section class="admin-info-card admin-info-card--wide" aria-labelledby="ordered-products-title">
+            <div class="admin-section-heading">
+                <p class="admin-info-card__eyebrow">Sản phẩm</p>
+                <h2 id="ordered-products-title">Sản phẩm đã đặt</h2>
+            </div>
+
+            @if (Model.Items == null || Model.Items.Count == 0)
+            {
+                <p class="admin-order-note">Không có thông tin sản phẩm trong đơn hàng.</p>
+            }
+            else
+            {
+                <div class="table-responsive admin-table-responsive">
+                    <table class="table admin-table admin-order-items-table">
+                        <thead>
+                            <tr>
+                                <th scope="col">Sản phẩm</th>
+                                <th scope="col">Số lượng</th>
+                                <th scope="col">Đơn giá</th>
+                                <th scope="col">Giảm giá</th>
+                                <th scope="col">Thành tiền</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model.Items)
+                            {
+                                var productName = string.IsNullOrWhiteSpace(item.ProductName)
+                                    ? "Sản phẩm không khả dụng"
+                                    : item.ProductName;
+
+                                <tr>
+                                    <td><strong>@productName</strong></td>
+                                    <td>@item.Quantity</td>
+                                    <td class="admin-table__amount">@(item.UnitPrice.ToString("N0") + " ₫")</td>
+                                    <td class="admin-table__amount">@(item.DiscountAmount.ToString("N0") + " ₫")</td>
+                                    <td class="admin-table__amount"><strong>@(item.LineTotal.ToString("N0") + " ₫")</strong></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </section>
+
+        <div class="admin-details-grid admin-details-grid--summary">
+            <section class="admin-info-card admin-order-summary" aria-labelledby="order-summary-title">
+                <p class="admin-info-card__eyebrow">Thanh toán</p>
+                <h2 id="order-summary-title">Tổng kết đơn hàng</h2>
+                <dl class="admin-info-list admin-info-list--totals">
+                    <div>
+                        <dt>Tiền hàng</dt>
+                        <dd>@(Model.TotalAmount.ToString("N0") + " ₫")</dd>
+                    </div>
+                    <div>
+                        <dt>Phí giao hàng</dt>
+                        <dd>@(Model.ShippingFee.ToString("N0") + " ₫")</dd>
+                    </div>
+                    <div class="admin-info-list__total">
+                        <dt>Tổng thanh toán</dt>
+                        <dd>@(Model.FinalAmount.ToString("N0") + " ₫")</dd>
+                    </div>
+                </dl>
+            </section>
+
+            <section class="admin-info-card" aria-labelledby="order-status-actions-title">
+                <p class="admin-info-card__eyebrow">Xử lý đơn</p>
+                <h2 id="order-status-actions-title">Cập nhật trạng thái</h2>
+                <div class="admin-order-actions">
+                    @if (Model.CanConfirm)
+                    {
+                        using (Html.BeginForm(
+                            "UpdateOrderStatus",
+                            "Admin",
+                            FormMethod.Post,
+                            new { @class = "admin-inline-form" }))
+                        {
+                            @Html.AntiForgeryToken()
+                            @Html.Hidden("orderId", Model.OrderId)
+                            @Html.Hidden("newStatus", "Confirmed")
+                            <button type="submit" class="btn btn-primary">Xác nhận đơn</button>
+                        }
+                    }
+
+                    @if (Model.CanProcess)
+                    {
+                        using (Html.BeginForm(
+                            "UpdateOrderStatus",
+                            "Admin",
+                            FormMethod.Post,
+                            new { @class = "admin-inline-form" }))
+                        {
+                            @Html.AntiForgeryToken()
+                            @Html.Hidden("orderId", Model.OrderId)
+                            @Html.Hidden("newStatus", "Processing")
+                            <button type="submit" class="btn btn-primary">Chuyển sang chuẩn bị</button>
+                        }
+                    }
+
+                    @if (Model.CanComplete)
+                    {
+                        using (Html.BeginForm(
+                            "UpdateOrderStatus",
+                            "Admin",
+                            FormMethod.Post,
+                            new { @class = "admin-inline-form" }))
+                        {
+                            @Html.AntiForgeryToken()
+                            @Html.Hidden("orderId", Model.OrderId)
+                            @Html.Hidden("newStatus", "Completed")
+                            <button type="submit" class="btn btn-primary">Hoàn thành đơn</button>
+                        }
+                    }
+
+                    @if (Model.CanCancel)
+                    {
+                        using (Html.BeginForm(
+                            "UpdateOrderStatus",
+                            "Admin",
+                            FormMethod.Post,
+                            new { @class = "admin-inline-form" }))
+                        {
+                            @Html.AntiForgeryToken()
+                            @Html.Hidden("orderId", Model.OrderId)
+                            @Html.Hidden("newStatus", "Cancelled")
+                            <button
+                                type="submit"
+                                class="btn btn-danger"
+                                onclick="return confirm('Bạn có chắc muốn hủy đơn hàng này? Tồn kho sẽ được hoàn lại.');">Hủy đơn</button>
+                        }
+                    }
+                </div>
+
+                @if (Model.OrderStatus == "Completed")
+                {
+                    <p class="admin-order-note admin-order-note--completed">Đơn hàng đã hoàn thành.</p>
+                }
+                else if (Model.OrderStatus == "Cancelled")
+                {
+                    <p class="admin-order-note admin-order-note--cancelled">Đơn hàng đã hủy.</p>
+                }
+            </section>
+        </div>
+    }
+
+    <nav class="admin-details-footer" aria-label="Quay lại">
+        @Html.ActionLink(
+            "Quay lại danh sách đơn hàng",
+            "Orders",
+            "Admin",
+            null,
+            new { @class = "btn btn-default" })
+    </nav>
+</main>

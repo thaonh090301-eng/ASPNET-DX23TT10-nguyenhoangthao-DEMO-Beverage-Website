@@ -1,0 +1,19 @@
+@model System.Collections.Generic.IEnumerable<BeverageWebsite.Models.Category>
+
+<div id="catalog-navigation-dropdown"
+     class="navigation-dropdown catalog-navigation">
+    <a class="navigation-dropdown-link"
+       href="@Url.Action("Index", "Product")">Tất cả sản phẩm</a>
+    <a class="navigation-dropdown-link"
+       href="@Url.Action("Index", "Category")">Tất cả danh mục</a>
+    <div class="navigation-dropdown-separator" role="separator"></div>
+    <span class="navigation-dropdown-heading">Theo danh mục</span>
+
+    @foreach (var category in Model)
+    {
+        <a class="navigation-dropdown-link"
+           href="@Url.Action("Index", "Product", new { categoryId = category.CategoryId })">
+            @category.CategoryName
+        </a>
+    }
+</div>

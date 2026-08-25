@@ -85,6 +85,7 @@
     <Compile Include="Controllers\OrderController.cs" />
     <Compile Include="Controllers\NavigationController.cs" />
     <Compile Include="Controllers\ProductController.cs" />
+    <Compile Include="Helpers\VietnamTimeHelper.cs" />
     <Compile Include="BLL\AddressBLL.cs" />
     <Compile Include="BLL\CartBLL.cs" />
     <Compile Include="BLL\CategoryBLL.cs" />
@@ -99,6 +100,9 @@
     <Compile Include="Filters\AdminAuthorizeAttribute.cs" />
     <Compile Include="ViewModels\AddressInputViewModel.cs" />
     <Compile Include="ViewModels\AdminDashboardViewModel.cs" />
+    <Compile Include="ViewModels\AdminOrderDetailItemViewModel.cs" />
+    <Compile Include="ViewModels\AdminOrderDetailsViewModel.cs" />
+    <Compile Include="ViewModels\AdminOrderListItemViewModel.cs" />
     <Compile Include="ViewModels\AdminCategoryInputViewModel.cs" />
     <Compile Include="ViewModels\AdminInventoryItemViewModel.cs" />
     <Compile Include="ViewModels\AdminProductCreateViewModel.cs" />
@@ -109,6 +113,7 @@
     <Compile Include="ViewModels\CheckoutAddressViewModel.cs" />
     <Compile Include="ViewModels\CheckoutInputViewModel.cs" />
     <Compile Include="ViewModels\CheckoutViewModel.cs" />
+    <Compile Include="ViewModels\HomePageViewModel.cs" />
     <Compile Include="ViewModels\LoginViewModel.cs" />
     <Compile Include="ViewModels\OrderDetailItemViewModel.cs" />
     <Compile Include="ViewModels\OrderDetailsViewModel.cs" />
@@ -145,11 +150,14 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Content\site.css" />
+    <Content Include="Content\Images\home-hero.png" />
     <Content Include="Global.asax" />
     <Content Include="Web.config" />
     <Content Include="Views\_ViewStart.cshtml" />
     <Content Include="Views\Admin\Index.cshtml" />
     <Content Include="Views\Admin\Inventory.cshtml" />
+    <Content Include="Views\Admin\OrderDetails.cshtml" />
+    <Content Include="Views\Admin\Orders.cshtml" />
     <Content Include="Views\Admin\CreateProduct.cshtml" />
     <Content Include="Views\Admin\Products.cshtml" />
     <Content Include="Views\Admin\EditProduct.cshtml" />
@@ -169,8 +177,11 @@
     <Content Include="Views\Product\Index.cshtml" />
     <Content Include="Views\Product\Details.cshtml" />
     <Content Include="Views\Home\Index.cshtml" />
+    <Content Include="Views\Home\Blog.cshtml" />
+    <Content Include="Views\Home\Contact.cshtml" />
     <Content Include="Views\Shared\_Layout.cshtml" />
     <Content Include="Views\Shared\_AdminNavigation.cshtml" />
+    <Content Include="Views\Shared\_CatalogNavigation.cshtml" />
     <Content Include="Views\Web.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

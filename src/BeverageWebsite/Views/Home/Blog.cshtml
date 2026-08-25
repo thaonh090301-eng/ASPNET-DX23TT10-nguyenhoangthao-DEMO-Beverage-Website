@@ -1,0 +1,85 @@
+@{
+    ViewBag.Title = "Góc nhỏ của Little Cloud";
+}
+
+<main class="content-page blog-page">
+    <header class="content-page-hero">
+        <div class="content-page-shell">
+            <p class="section-eyebrow">Chuyện bên ly nước</p>
+            <h1>Góc nhỏ của Little Cloud</h1>
+            <p>
+                Những ghi chép giản dị về cách chọn món, cảm nhận hương vị và dành
+                cho mình một khoảng nghỉ dễ chịu trong ngày.
+            </p>
+        </div>
+    </header>
+
+    <div class="content-page-shell blog-article-list">
+        <article class="blog-article" id="chon-mon-ngay-ban-ron">
+            <div class="blog-article__marker" aria-hidden="true">01</div>
+            <div class="blog-article__content">
+                <h2>Cách chọn món uống phù hợp cho một ngày bận rộn</h2>
+                <p>
+                    Khi lịch trình dày hơn thường lệ, một món uống quen thuộc có thể trở thành
+                    điểm dừng nhỏ giúp bạn lấy lại nhịp. Hãy bắt đầu bằng việc lắng nghe nhu cầu
+                    của mình: một hương vị đậm đà cho buổi sáng cần sự tập trung, hay một lựa chọn
+                    êm dịu khi buổi chiều cần được thả lỏng.
+                </p>
+                <p>
+                    Thay vì chọn vội, bạn có thể cân nhắc độ ngọt, nhiệt độ và thời gian thưởng thức.
+                    Một ly vừa vặn không cần cầu kỳ; điều quan trọng là nó phù hợp với khoảnh khắc
+                    và khiến quãng nghỉ ngắn của bạn trở nên dễ chịu hơn.
+                </p>
+            </div>
+        </article>
+
+        <article class="blog-article" id="matcha-cacao-khoang-nghi">
+            <div class="blog-article__marker" aria-hidden="true">02</div>
+            <div class="blog-article__content">
+                <h2>Matcha, cacao và những khoảng nghỉ dịu dàng</h2>
+                <p>
+                    Matcha mang sắc xanh cùng vị thanh đặc trưng, trong khi cacao gợi cảm giác
+                    ấm áp và tròn đầy. Mỗi hương vị tạo nên một trải nghiệm riêng, nhưng đều có
+                    thể đồng hành với những phút chậm lại giữa một ngày nhiều chuyển động.
+                </p>
+                <p>
+                    Hãy thử thưởng thức từng ngụm nhỏ và để hương thơm mở ra tự nhiên. Khi không
+                    vội vàng, bạn sẽ dễ nhận thấy sự cân bằng giữa vị nguyên bản, độ béo và chút
+                    ngọt vừa đủ làm nên nét riêng của món uống.
+                </p>
+            </div>
+        </article>
+
+        <article class="blog-article" id="thuong-thuc-tron-vi">
+            <div class="blog-article__marker" aria-hidden="true">03</div>
+            <div class="blog-article__content">
+                <h2>Bí quyết thưởng thức đồ uống trọn vị hơn</h2>
+                <p>
+                    Nhiệt độ có thể làm thay đổi cách ta cảm nhận hương thơm và vị ngọt. Với món
+                    nóng, hãy chờ một chút trước ngụm đầu tiên; với món lạnh, khuấy nhẹ để các lớp
+                    hương vị hòa quyện đều hơn trước khi thưởng thức.
+                </p>
+                <p>
+                    Một không gian thoải mái cũng góp phần làm trải nghiệm trọn vẹn. Đặt điện thoại
+                    xuống trong vài phút, chú ý đến mùi thơm và hậu vị, rồi để ly nước trở thành một
+                    khoảng nghỉ thật sự thay vì chỉ là điều đi cùng lịch trình.
+                </p>
+            </div>
+        </article>
+    </div>
+
+    <section class="content-page-cta" aria-label="Khám phá menu">
+        <div class="content-page-shell content-page-cta__inner">
+            <div>
+                <h2>Chọn một hương vị cho khoảng nghỉ tiếp theo</h2>
+                <p>Khám phá những món uống hiện có trong menu của Little Cloud.</p>
+            </div>
+            @Html.ActionLink(
+                "Xem menu",
+                "Index",
+                "Product",
+                null,
+                new { @class = "home-button home-button--primary" })
+        </div>
+    </section>
+</main>

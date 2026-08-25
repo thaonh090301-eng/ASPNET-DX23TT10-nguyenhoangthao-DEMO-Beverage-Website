@@ -14,6 +14,7 @@ namespace BeverageWebsite.DAL
         private const int ProductNameMaxLength = 200;
         private const int DescriptionMaxLength = 1000;
         private const int ImageUrlMaxLength = 500;
+        private const int BadgeTypeMaxLength = 20;
         private const int SearchKeywordMaxLength = DescriptionMaxLength;
         private const int EscapedSearchKeywordMaxLength =
             SearchKeywordMaxLength * 2;
@@ -37,7 +38,7 @@ namespace BeverageWebsite.DAL
         public List<Product> GetAll()
         {
             var products = new List<Product>();
-            const string sql = @"SELECT ProductId, CategoryId, ProductName, Description, Price, ImageUrl, IsActive, CreatedAt FROM dbo.Product ORDER BY ProductName";
+            const string sql = @"SELECT ProductId, CategoryId, ProductName, Description, Price, ImageUrl, IsActive, IsFeatured, BadgeType, CreatedAt FROM dbo.Product ORDER BY ProductName";
 
             try
             {
@@ -73,6 +74,8 @@ SELECT
     P.Price,
     P.ImageUrl,
     P.IsActive,
+    P.IsFeatured,
+    P.BadgeType,
     P.CreatedAt
 FROM dbo.Product AS P
 INNER JOIN dbo.Category AS C
@@ -100,6 +103,71 @@ ORDER BY P.ProductName, P.ProductId";
         }
 
         /// <summary>
+        /// Retrieves featured products that are active and belong to active categories.
+        /// </summary>
+        /// <param name="maximumCount">The maximum number of products to return.</param>
+        /// <returns>A stable list of featured, publicly available products.</returns>
+        public List<Product> GetFeaturedActive(int maximumCount)
+        {
+            if (maximumCount <= 0)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(maximumCount),
+                    "The maximum count must be greater than zero.");
+            }
+
+            var products = new List<Product>();
+            const string sql = @"
+SELECT TOP (@MaximumCount)
+    P.ProductId,
+    P.CategoryId,
+    P.ProductName,
+    P.Description,
+    P.Price,
+    P.ImageUrl,
+    P.IsActive,
+    P.IsFeatured,
+    P.BadgeType,
+    P.CreatedAt
+FROM dbo.Product AS P
+INNER JOIN dbo.Category AS C
+    ON C.CategoryId = P.CategoryId
+WHERE P.IsActive = 1
+  AND C.IsActive = 1
+  AND P.IsFeatured = 1
+ORDER BY P.ProductId;";
+            var parameters = new[]
+            {
+                new SqlParameter("@MaximumCount", SqlDbType.Int)
+                {
+                    Value = maximumCount
+                }
+            };
+
+            try
+            {
+                using (var reader = _dataProvider.ExecuteReader(
+                    sql,
+                    CommandType.Text,
+                    parameters))
+                {
+                    while (reader.Read())
+                    {
+                        products.Add(MapProduct(reader));
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException(
+                    "Failed to retrieve featured active products.",
+                    ex);
+            }
+
+            return products;
+        }
+
+        /// <summary>
         /// Retrieves a product by its identifier.
         /// </summary>
         /// <param name="id">The product identifier.</param>
@@ -108,7 +176,7 @@ ORDER BY P.ProductName, P.ProductId";
         {
             ValidateIdentifier(id, nameof(id));
 
-            const string sql = @"SELECT ProductId, CategoryId, ProductName, Description, Price, ImageUrl, IsActive, CreatedAt FROM dbo.Product WHERE ProductId = @ProductId";
+            const string sql = @"SELECT ProductId, CategoryId, ProductName, Description, Price, ImageUrl, IsActive, IsFeatured, BadgeType, CreatedAt FROM dbo.Product WHERE ProductId = @ProductId";
             var parameters = new[]
             {
                 new SqlParameter("@ProductId", SqlDbType.Int) { Value = id }
@@ -150,6 +218,8 @@ SELECT
     P.Price,
     P.ImageUrl,
     P.IsActive,
+    P.IsFeatured,
+    P.BadgeType,
     P.CreatedAt
 FROM dbo.Product AS P
 INNER JOIN dbo.Category AS C
@@ -190,7 +260,7 @@ WHERE P.ProductId = @ProductId
             ValidateIdentifier(categoryId, nameof(categoryId));
 
             var products = new List<Product>();
-            const string sql = @"SELECT ProductId, CategoryId, ProductName, Description, Price, ImageUrl, IsActive, CreatedAt FROM dbo.Product WHERE CategoryId = @CategoryId ORDER BY ProductName";
+            const string sql = @"SELECT ProductId, CategoryId, ProductName, Description, Price, ImageUrl, IsActive, IsFeatured, BadgeType, CreatedAt FROM dbo.Product WHERE CategoryId = @CategoryId ORDER BY ProductName";
             var parameters = new[]
             {
                 new SqlParameter("@CategoryId", SqlDbType.Int) { Value = categoryId }
@@ -233,6 +303,8 @@ SELECT
     P.Price,
     P.ImageUrl,
     P.IsActive,
+    P.IsFeatured,
+    P.BadgeType,
     P.CreatedAt
 FROM dbo.Product AS P
 INNER JOIN dbo.Category AS C
@@ -293,6 +365,8 @@ SELECT
     P.Price,
     P.ImageUrl,
     P.IsActive,
+    P.IsFeatured,
+    P.BadgeType,
     P.CreatedAt
 FROM dbo.Product AS P
 WHERE (P.ProductName LIKE @Keyword ESCAPE N'\'
@@ -353,6 +427,8 @@ SELECT
     P.Price,
     P.ImageUrl,
     P.IsActive,
+    P.IsFeatured,
+    P.BadgeType,
     P.CreatedAt
 FROM dbo.Product AS P
 INNER JOIN dbo.Category AS C
@@ -428,8 +504,12 @@ ORDER BY P.ProductName, P.ProductId";
                 product.ImageUrl,
                 ImageUrlMaxLength,
                 nameof(product.ImageUrl));
+            var badgeType = NormalizeOptionalString(
+                product.BadgeType,
+                BadgeTypeMaxLength,
+                nameof(product.BadgeType));
 
-            const string sql = @"INSERT INTO dbo.Product (CategoryId, ProductName, Description, Price, ImageUrl, IsActive) VALUES (@CategoryId, @ProductName, @Description, @Price, @ImageUrl, @IsActive)";
+            const string sql = @"INSERT INTO dbo.Product (CategoryId, ProductName, Description, Price, ImageUrl, IsActive, IsFeatured, BadgeType) VALUES (@CategoryId, @ProductName, @Description, @Price, @ImageUrl, @IsActive, @IsFeatured, @BadgeType)";
             var parameters = new[]
             {
                 new SqlParameter("@CategoryId", SqlDbType.Int) { Value = product.CategoryId },
@@ -437,7 +517,9 @@ ORDER BY P.ProductName, P.ProductId";
                 new SqlParameter("@Description", SqlDbType.NVarChar, DescriptionMaxLength) { Value = (object)description ?? DBNull.Value },
                 CreatePriceParameter(product.Price),
                 new SqlParameter("@ImageUrl", SqlDbType.NVarChar, ImageUrlMaxLength) { Value = (object)imageUrl ?? DBNull.Value },
-                new SqlParameter("@IsActive", SqlDbType.Bit) { Value = product.IsActive }
+                new SqlParameter("@IsActive", SqlDbType.Bit) { Value = product.IsActive },
+                new SqlParameter("@IsFeatured", SqlDbType.Bit) { Value = product.IsFeatured },
+                CreateBadgeTypeParameter(badgeType)
             };
 
             int affectedRows;
@@ -511,15 +593,19 @@ ORDER BY P.ProductName, P.ProductId";
                 product.ImageUrl,
                 ImageUrlMaxLength,
                 nameof(product.ImageUrl));
+            var badgeType = NormalizeOptionalString(
+                product.BadgeType,
+                BadgeTypeMaxLength,
+                nameof(product.BadgeType));
 
             return _dataProvider.ExecuteInTransaction((connection, transaction) =>
             {
                 const string productSql = @"
 INSERT INTO dbo.Product
-    (CategoryId, ProductName, Description, Price, ImageUrl, IsActive)
+    (CategoryId, ProductName, Description, Price, ImageUrl, IsActive, IsFeatured, BadgeType)
 OUTPUT INSERTED.ProductId
 VALUES
-    (@CategoryId, @ProductName, @Description, @Price, @ImageUrl, @IsActive);";
+    (@CategoryId, @ProductName, @Description, @Price, @ImageUrl, @IsActive, @IsFeatured, @BadgeType);";
 
                 int productId;
 
@@ -534,6 +620,8 @@ VALUES
                     productCommand.Parameters.Add(CreatePriceParameter(product.Price));
                     productCommand.Parameters.Add(new SqlParameter("@ImageUrl", SqlDbType.NVarChar, ImageUrlMaxLength) { Value = (object)imageUrl ?? DBNull.Value });
                     productCommand.Parameters.Add(new SqlParameter("@IsActive", SqlDbType.Bit) { Value = product.IsActive });
+                    productCommand.Parameters.Add(new SqlParameter("@IsFeatured", SqlDbType.Bit) { Value = product.IsFeatured });
+                    productCommand.Parameters.Add(CreateBadgeTypeParameter(badgeType));
 
                     var result = productCommand.ExecuteScalar();
 
@@ -610,8 +698,12 @@ VALUES
                 product.ImageUrl,
                 ImageUrlMaxLength,
                 nameof(product.ImageUrl));
+            var badgeType = NormalizeOptionalString(
+                product.BadgeType,
+                BadgeTypeMaxLength,
+                nameof(product.BadgeType));
 
-            const string sql = @"UPDATE dbo.Product SET CategoryId = @CategoryId, ProductName = @ProductName, Description = @Description, Price = @Price, ImageUrl = @ImageUrl, IsActive = @IsActive WHERE ProductId = @ProductId";
+            const string sql = @"UPDATE dbo.Product SET CategoryId = @CategoryId, ProductName = @ProductName, Description = @Description, Price = @Price, ImageUrl = @ImageUrl, IsActive = @IsActive, IsFeatured = @IsFeatured, BadgeType = @BadgeType WHERE ProductId = @ProductId";
             var parameters = new[]
             {
                 new SqlParameter("@ProductId", SqlDbType.Int) { Value = product.ProductId },
@@ -620,7 +712,9 @@ VALUES
                 new SqlParameter("@Description", SqlDbType.NVarChar, DescriptionMaxLength) { Value = (object)description ?? DBNull.Value },
                 CreatePriceParameter(product.Price),
                 new SqlParameter("@ImageUrl", SqlDbType.NVarChar, ImageUrlMaxLength) { Value = (object)imageUrl ?? DBNull.Value },
-                new SqlParameter("@IsActive", SqlDbType.Bit) { Value = product.IsActive }
+                new SqlParameter("@IsActive", SqlDbType.Bit) { Value = product.IsActive },
+                new SqlParameter("@IsFeatured", SqlDbType.Bit) { Value = product.IsFeatured },
+                CreateBadgeTypeParameter(badgeType)
             };
 
             int affectedRows;
@@ -844,6 +938,17 @@ WHERE ProductId = @ProductId;";
             };
         }
 
+        private static SqlParameter CreateBadgeTypeParameter(string value)
+        {
+            return new SqlParameter(
+                "@BadgeType",
+                SqlDbType.NVarChar,
+                BadgeTypeMaxLength)
+            {
+                Value = (object)value ?? DBNull.Value
+            };
+        }
+
         private static Product MapProduct(SqlDataReader reader)
         {
             var productIdOrdinal = reader.GetOrdinal("ProductId");
@@ -853,6 +958,8 @@ WHERE ProductId = @ProductId;";
             var priceOrdinal = reader.GetOrdinal("Price");
             var imageUrlOrdinal = reader.GetOrdinal("ImageUrl");
             var isActiveOrdinal = reader.GetOrdinal("IsActive");
+            var isFeaturedOrdinal = reader.GetOrdinal("IsFeatured");
+            var badgeTypeOrdinal = reader.GetOrdinal("BadgeType");
             var createdAtOrdinal = reader.GetOrdinal("CreatedAt");
 
             return new Product
@@ -864,6 +971,8 @@ WHERE ProductId = @ProductId;";
                 Price = reader.IsDBNull(priceOrdinal) ? 0 : reader.GetDecimal(priceOrdinal),
                 ImageUrl = reader.IsDBNull(imageUrlOrdinal) ? null : reader.GetString(imageUrlOrdinal),
                 IsActive = reader.IsDBNull(isActiveOrdinal) ? false : reader.GetBoolean(isActiveOrdinal),
+                IsFeatured = reader.IsDBNull(isFeaturedOrdinal) ? false : reader.GetBoolean(isFeaturedOrdinal),
+                BadgeType = reader.IsDBNull(badgeTypeOrdinal) ? null : reader.GetString(badgeTypeOrdinal),
                 CreatedAt = reader.IsDBNull(createdAtOrdinal) ? DateTime.MinValue : reader.GetDateTime(createdAtOrdinal)
             };
         }

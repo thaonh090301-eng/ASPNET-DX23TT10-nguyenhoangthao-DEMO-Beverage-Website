@@ -1,8 +1,14 @@
-@using System.Globalization
 @model BeverageWebsite.ViewModels.AdminProductEditViewModel
 
 @{
     ViewBag.Title = "Sửa sản phẩm";
+    var hasCurrentImage = !String.IsNullOrWhiteSpace(Model.ImageUrl);
+    var currentImageUrl = hasCurrentImage
+        ? Url.Content(Model.ImageUrl)
+        : String.Empty;
+    var currentImageAlt = String.IsNullOrWhiteSpace(Model.ProductName)
+        ? "Ảnh sản phẩm hiện tại"
+        : Model.ProductName;
 }
 
 <main class="container">
@@ -14,10 +20,16 @@
                 "EditProduct",
                 "Admin",
                 FormMethod.Post,
-                new { @class = "form-horizontal", role = "form" }))
+                new
+                {
+                    @class = "form-horizontal product-form",
+                    role = "form",
+                    enctype = "multipart/form-data"
+                }))
             {
                 @Html.AntiForgeryToken()
                 @Html.HiddenFor(model => model.ProductId)
+                @Html.HiddenFor(model => model.ImageUrl)
                 @Html.ValidationSummary(false, "", new { @class = "text-danger" })
 
                 <div class="form-group">
@@ -57,15 +69,12 @@
 
                 <div class="form-group">
                     <label class="control-label" for="Price">Giá</label>
-                    @Html.TextBox(
-                        "Price",
-                        Model.Price.ToString(CultureInfo.InvariantCulture),
+                    @Html.TextBoxFor(
+                        model => model.Price,
                         new
                         {
                             @class = "form-control",
-                            type = "number",
-                            min = "0",
-                            step = "1000"
+                            inputmode = "decimal"
                         })
                     @Html.ValidationMessageFor(
                         model => model.Price,
@@ -73,15 +82,79 @@
                         new { @class = "text-danger" })
                 </div>
 
-                <div class="form-group">
-                    <label class="control-label" for="ImageUrl">ImageUrl</label>
-                    @Html.TextBoxFor(
-                        model => model.ImageUrl,
-                        new { @class = "form-control" })
-                    @Html.ValidationMessageFor(
-                        model => model.ImageUrl,
-                        "",
-                        new { @class = "text-danger" })
+                <div class="form-group product-image-field">
+                    <label class="control-label" for="edit-product-image-file">Ảnh sản phẩm</label>
+                    <div class="product-image-upload"
+                         data-product-image-upload
+                         data-existing-src="@currentImageUrl"
+                         data-existing-alt="@currentImageAlt">
+                        <div class="product-image-upload__preview"
+                             id="edit-product-image-preview">
+                            @if (hasCurrentImage)
+                            {
+                                <img class="product-image-upload__image"
+                                     id="edit-product-image-preview-image"
+                                     src="@currentImageUrl"
+                                     alt="@currentImageAlt" />
+                                <span class="product-image-upload__empty"
+                                      id="edit-product-image-empty"
+                                      hidden>
+                                    Chưa chọn ảnh
+                                </span>
+                            }
+                            else
+                            {
+                                <img class="product-image-upload__image"
+                                     id="edit-product-image-preview-image"
+                                     alt="Xem trước ảnh sản phẩm"
+                                     hidden />
+                                <span class="product-image-upload__empty"
+                                      id="edit-product-image-empty">
+                                    Chưa chọn ảnh
+                                </span>
+                            }
+                        </div>
+
+                        <div class="product-image-upload__controls">
+                            <div class="product-image-upload__actions">
+                                <input class="product-image-upload__input"
+                                       id="edit-product-image-file"
+                                       type="file"
+                                       name="imageFile"
+                                       accept="image/jpeg,image/png,image/webp"
+                                       aria-controls="edit-product-image-preview"
+                                       aria-describedby="edit-product-image-status edit-product-image-help" />
+                                <label class="product-image-upload__button"
+                                       for="edit-product-image-file">
+                                    Chọn ảnh
+                                </label>
+                                <button class="product-image-upload__clear"
+                                        id="edit-product-image-clear"
+                                        type="button"
+                                        hidden>
+                                    Bỏ chọn ảnh mới
+                                </button>
+                            </div>
+                            <p class="product-image-upload__status"
+                               id="edit-product-image-status"
+                               aria-live="polite">
+                                @(hasCurrentImage
+                                    ? "Ảnh hiện tại sẽ được giữ nếu bạn không chọn ảnh mới."
+                                    : "Chưa chọn ảnh")
+                            </p>
+                            <p class="help-block" id="edit-product-image-help">
+                                Hỗ trợ JPG, PNG, WEBP. Dung lượng tối đa 5 MB.
+                            </p>
+                            @Html.ValidationMessage(
+                                "imageFile",
+                                "",
+                                new { @class = "text-danger" })
+                            @Html.ValidationMessageFor(
+                                model => model.ImageUrl,
+                                "",
+                                new { @class = "text-danger" })
+                        </div>
+                    </div>
                 </div>
 
                 <div class="checkbox">
@@ -89,6 +162,31 @@
                         @Html.CheckBoxFor(model => model.IsActive)
                         Đang bán
                     </label>
+                </div>
+
+                <div class="checkbox">
+                    <label>
+                        @Html.CheckBoxFor(model => model.IsFeatured)
+                        Hiển thị trong Món được yêu thích
+                    </label>
+                    <p class="help-block">
+                        Chọn mục này để món xuất hiện trong khu vực Món được yêu thích ở trang chủ.
+                    </p>
+                </div>
+
+                <div class="form-group">
+                    <label class="control-label" for="BadgeType">Nhãn sản phẩm</label>
+                    @Html.DropDownListFor(
+                        model => model.BadgeType,
+                        (SelectList)ViewBag.BadgeTypes,
+                        new { @class = "form-control" })
+                    @Html.ValidationMessageFor(
+                        model => model.BadgeType,
+                        "",
+                        new { @class = "text-danger" })
+                    <p class="help-block">
+                        Nhãn chỉ dùng để làm nổi bật sản phẩm và không thay đổi trạng thái bán.
+                    </p>
                 </div>
 
                 <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
@@ -102,3 +200,117 @@
         </div>
     </div>
 </main>
+
+<style>
+    .product-image-upload__image {
+        width: 180px;
+        height: 180px;
+        max-width: 100%;
+        object-fit: cover;
+        display: block;
+        border-radius: 8px;
+    }
+</style>
+
+<script>
+    (function () {
+        "use strict";
+
+        var upload = document.querySelector("[data-product-image-upload]");
+        var input = document.getElementById("edit-product-image-file");
+        var previewImage = document.getElementById("edit-product-image-preview-image");
+        var emptyState = document.getElementById("edit-product-image-empty");
+        var status = document.getElementById("edit-product-image-status");
+        var clearButton = document.getElementById("edit-product-image-clear");
+        var objectUrlApi = window.URL || window.webkitURL;
+        var activeObjectUrl = null;
+        var previewVersion = 0;
+
+        if (!upload || !input || !previewImage || !emptyState || !status || !clearButton) {
+            return;
+        }
+
+        var existingSrc = upload.getAttribute("data-existing-src") || "";
+        var existingAlt = upload.getAttribute("data-existing-alt") || "Ảnh sản phẩm hiện tại";
+
+        function revokeObjectUrl() {
+            if (activeObjectUrl && objectUrlApi && objectUrlApi.revokeObjectURL) {
+                objectUrlApi.revokeObjectURL(activeObjectUrl);
+            }
+
+            activeObjectUrl = null;
+        }
+
+        function restoreCurrentImage() {
+            previewVersion += 1;
+            revokeObjectUrl();
+            clearButton.hidden = true;
+
+            if (existingSrc) {
+                previewImage.src = existingSrc;
+                previewImage.alt = existingAlt;
+                previewImage.hidden = false;
+                emptyState.hidden = true;
+                status.textContent = "Ảnh hiện tại sẽ được giữ nếu bạn không chọn ảnh mới.";
+                return;
+            }
+
+            previewImage.hidden = true;
+            previewImage.removeAttribute("src");
+            emptyState.hidden = false;
+            status.textContent = "Chưa chọn ảnh";
+        }
+
+        function showSelectedFile(file) {
+            previewVersion += 1;
+            var currentVersion = previewVersion;
+
+            revokeObjectUrl();
+            previewImage.alt = "Xem trước ảnh sản phẩm mới";
+            previewImage.hidden = false;
+            emptyState.hidden = true;
+            clearButton.hidden = false;
+            status.textContent = "Đã chọn ảnh mới: " + file.name;
+
+            if (objectUrlApi && objectUrlApi.createObjectURL) {
+                activeObjectUrl = objectUrlApi.createObjectURL(file);
+                previewImage.src = activeObjectUrl;
+                return;
+            }
+
+            if (window.FileReader) {
+                var reader = new FileReader();
+                reader.addEventListener("load", function () {
+                    if (currentVersion === previewVersion) {
+                        previewImage.src = reader.result;
+                    }
+                });
+                reader.readAsDataURL(file);
+            }
+        }
+
+        input.addEventListener("change", function () {
+            var file = input.files && input.files.length ? input.files[0] : null;
+            if (!file) {
+                restoreCurrentImage();
+                return;
+            }
+
+            showSelectedFile(file);
+        });
+
+        clearButton.addEventListener("click", function () {
+            input.value = "";
+            restoreCurrentImage();
+            input.focus();
+        });
+
+        if (input.form) {
+            input.form.addEventListener("reset", function () {
+                window.setTimeout(restoreCurrentImage, 0);
+            });
+        }
+
+        window.addEventListener("beforeunload", revokeObjectUrl);
+    }());
+</script>

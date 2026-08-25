@@ -1,115 +1,171 @@
 @model BeverageWebsite.ViewModels.ProductDetailsViewModel
 
+@helper RenderProductBadge(string badgeType)
+{
+    if (string.Equals(badgeType, "Featured", System.StringComparison.Ordinal))
+    {
+        <span class="product-badge product-badge--featured">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M12 3.2l2.72 5.51 6.08.88-4.4 4.29 1.04 6.05L12 17.07l-5.44 2.86 1.04-6.05-4.4-4.29 6.08-.88L12 3.2Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>
+            <span>Món nổi bật</span>
+        </span>
+    }
+    else if (string.Equals(badgeType, "BestSeller", System.StringComparison.Ordinal))
+    {
+        <span class="product-badge product-badge--bestseller">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M13.5 2.75c.65 3.8-2.35 5.13-2.35 8.05 0 1.25.68 2.08 1.73 2.7-.13-2.05 1.2-3.26 2.65-4.37 1.22 2.07 3.47 3.72 3.47 6.7 0 3.43-2.7 6.2-6.03 6.2S5.5 19.76 5.5 16.33c0-4.16 2.68-7.02 8-13.58Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>
+            <span>Best seller</span>
+        </span>
+    }
+    else if (string.Equals(badgeType, "New", System.StringComparison.Ordinal))
+    {
+        <span class="product-badge product-badge--new">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M11.5 3.25c.65 4.49 3.26 7.1 7.75 7.75-4.49.65-7.1 3.26-7.75 7.75C10.85 14.26 8.24 11.65 3.75 11c4.49-.65 7.1-3.26 7.75-7.75ZM19 3v4m2-2h-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>
+            <span>Món mới</span>
+        </span>
+    }
+}
+
 @{
-    ViewBag.Title = "Chi tiết sản phẩm";
+    ViewBag.Title = Model == null ? "Chi tiết sản phẩm" : Model.ProductName;
     var cartErrorMessage = TempData["ErrorMessage"] as string;
 }
 
-<main>
-    <h1>Chi tiết sản phẩm</h1>
-
-    @if (!string.IsNullOrWhiteSpace(cartErrorMessage))
-    {
-        <div class="alert alert-danger">
-            @cartErrorMessage
-        </div>
-    }
-
-    @if (Model == null)
-    {
-        <p>Không thể hiển thị chi tiết sản phẩm.</p>
-    }
-    else
-    {
-        <dl class="dl-horizontal">
-            <dt>Ảnh</dt>
-            <dd>
-                @if (string.IsNullOrWhiteSpace(Model.ImageUrl))
-                {
-                    <span>Chưa có ảnh</span>
-                }
-                else
-                {
-                    <img src="@Url.Content(Model.ImageUrl)"
-                         alt="@Model.ProductName"
-                         class="img-responsive" />
-                }
-            </dd>
-
-            <dt>Tên sản phẩm</dt>
-            <dd>@Model.ProductName</dd>
-
-            <dt>Mô tả</dt>
-            <dd>
-                @(string.IsNullOrWhiteSpace(Model.Description)
-                    ? "Không có mô tả."
-                    : Model.Description)
-            </dd>
-
-            <dt>Giá</dt>
-            <dd>@Model.Price.ToString("N0") ₫</dd>
-
-            <dt>Trạng thái</dt>
-            <dd>@(Model.IsInStock ? "Còn món" : "Tạm hết món")</dd>
-        </dl>
-
-        if (!Model.IsInStock)
+<main class="product-details-page">
+    <div class="product-details-shell">
+        @if (!string.IsNullOrWhiteSpace(cartErrorMessage))
         {
-            <p>Món này hiện đang tạm hết. Vui lòng chọn món khác.</p>
-            <button type="button"
-                    class="btn btn-default"
-                    disabled="disabled">
-                Tạm hết món
-            </button>
+            <div class="alert alert-danger" role="alert">
+                @cartErrorMessage
+            </div>
         }
-        else if (!Request.IsAuthenticated)
+
+        @if (Model == null)
         {
-            <p>Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng.</p>
-            <p>
-                @Html.ActionLink(
-                    "Đăng nhập",
-                    "Login",
-                    "Account",
-                    null,
-                    new { @class = "btn btn-primary" })
-            </p>
+            <div class="product-details-card product-details-card--empty">
+                <div class="product-details-content">
+                    <h1>Không thể hiển thị chi tiết sản phẩm</h1>
+                    <p>Thông tin món uống hiện không khả dụng. Mời bạn quay lại menu để chọn món khác.</p>
+                    @Html.ActionLink(
+                        "Quay lại menu",
+                        "Index",
+                        "Product",
+                        null,
+                        new { @class = "customer-action customer-action--secondary product-details-back" })
+                </div>
+            </div>
         }
         else
         {
-            using (Html.BeginForm(
-                "AddItem",
-                "Cart",
-                FormMethod.Post,
-                new { @class = "form-inline" }))
-            {
-                @Html.AntiForgeryToken()
-                @Html.Hidden("productId", Model.ProductId)
+            var detailsUrl = Url.Action(
+                "Details",
+                "Product",
+                new { id = Model.ProductId });
 
-                <div class="form-group">
-                    <label for="quantity">Số lượng</label>
-                    <input type="number"
-                           id="quantity"
-                           name="quantity"
-                           value="1"
-                           min="1"
-                           max="@Model.StockQuantity"
-                           step="1"
-                           class="form-control" />
+            <article class="product-details-card">
+                <div class="product-details-media product-media">
+                    @RenderProductBadge(Model.BadgeType)
+                    @if (string.IsNullOrWhiteSpace(Model.ImageUrl))
+                    {
+                        <div class="product-details-placeholder">
+                            <svg viewBox="0 0 160 160" aria-hidden="true" focusable="false">
+                                <path d="M30 52h82v48a29 29 0 0 1-29 29H59a29 29 0 0 1-29-29V52Z" fill="none" stroke="currentColor" stroke-width="6"></path>
+                                <path d="M112 65h12a19 19 0 0 1 0 38h-12M50 37c0-8 8-8 8-17m24 17c0-8 8-8 8-17" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round"></path>
+                            </svg>
+                            <span>Hình ảnh đang cập nhật</span>
+                        </div>
+                    }
+                    else
+                    {
+                        <img src="@Url.Content(Model.ImageUrl)"
+                             alt="@Model.ProductName"
+                             class="product-details-image" />
+                    }
                 </div>
 
-                <button type="submit" class="btn btn-primary">
-                    Thêm vào giỏ hàng
-                </button>
-            }
-        }
-    }
+                <div class="product-details-content">
+                    <p class="section-eyebrow">Món uống tại Little Cloud</p>
+                    <h1>@Model.ProductName</h1>
+                    <p class="product-details-price">@Model.Price.ToString("N0") ₫</p>
+                    <p class="product-details-description">
+                        @(string.IsNullOrWhiteSpace(Model.Description)
+                            ? "Chưa có mô tả."
+                            : Model.Description)
+                    </p>
 
-    <p>
-        @Html.ActionLink(
-            "Quay lại danh sách",
-            "Index",
-            "Product",
-            null,
-            new { @class = "btn btn-default" })
-    </p>
+                    <div class="product-details-stock" id="product-stock-state">
+                        <span class="stock-state @(Model.StockQuantity > 0 ? "stock-state--available" : "stock-state--unavailable")">
+                            @(Model.StockQuantity > 0 ? "Còn món" : "Tạm hết món")
+                        </span>
+                        @if (Model.StockQuantity <= 0)
+                        {
+                            <p>Món này hiện đang tạm hết. Vui lòng chọn món khác.</p>
+                        }
+                    </div>
+
+                    <div class="product-details-purchase">
+                        @if (Model.StockQuantity <= 0)
+                        {
+                            <button type="button"
+                                    class="customer-action customer-action--disabled"
+                                    disabled="disabled">
+                                Tạm hết món
+                            </button>
+                        }
+                        else if (!Request.IsAuthenticated)
+                        {
+                            <p>Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng.</p>
+                            @Html.ActionLink(
+                                "Đăng nhập để mua",
+                                "Login",
+                                "Account",
+                                new { returnUrl = detailsUrl },
+                                new { @class = "customer-action customer-action--primary" })
+                        }
+                        else
+                        {
+                            using (Html.BeginForm(
+                                "AddItem",
+                                "Cart",
+                                FormMethod.Post,
+                                new { @class = "customer-add-form" }))
+                            {
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="productId" value="@Model.ProductId" />
+
+                                <div class="quantity-field">
+                                    <label for="quantity">Số lượng</label>
+                                    <input type="number"
+                                           id="quantity"
+                                           name="quantity"
+                                           value="1"
+                                           min="1"
+                                           max="@Model.StockQuantity"
+                                           step="1"
+                                           class="customer-input"
+                                           aria-describedby="product-stock-state" />
+                                </div>
+
+                                <button type="submit" class="customer-action customer-action--primary">
+                                    Thêm vào giỏ
+                                </button>
+                            }
+                        }
+                    </div>
+
+                    @Html.ActionLink(
+                        "Quay lại menu",
+                        "Index",
+                        "Product",
+                        null,
+                        new { @class = "product-details-back" })
+                </div>
+            </article>
+        }
+    </div>
 </main>

@@ -1,0 +1,288 @@
+@using System.Collections.Generic
+@using System.Linq
+@using System.Web.Mvc
+@model IEnumerable<BeverageWebsite.ViewModels.AdminOrderListItemViewModel>
+
+@{
+    ViewBag.Title = "Quản lý đơn hàng";
+    var successMessage = TempData["SuccessMessage"] as string;
+    var errorMessage = TempData["ErrorMessage"] as string;
+    var activeDateFilter = ViewBag.ActiveDateFilter as string ?? "today";
+    var activeStatus = ViewBag.ActiveStatus as string ?? string.Empty;
+    var olderUnfinishedOrderCount = ViewBag.OlderUnfinishedOrderCount == null
+        ? 0
+        : (int)ViewBag.OlderUnfinishedOrderCount;
+    var activeDateDisplayName = "Hôm nay";
+
+    if (activeDateFilter == "yesterday")
+    {
+        activeDateDisplayName = "Hôm qua";
+    }
+    else if (activeDateFilter == "last7days")
+    {
+        activeDateDisplayName = "7 ngày gần đây";
+    }
+    else if (activeDateFilter == "all")
+    {
+        activeDateDisplayName = "Tất cả lịch sử";
+    }
+
+    var activeStatusDisplayName = "Tất cả trạng thái";
+
+    if (activeStatus == "Pending")
+    {
+        activeStatusDisplayName = "Chờ xác nhận";
+    }
+    else if (activeStatus == "Confirmed")
+    {
+        activeStatusDisplayName = "Đã xác nhận";
+    }
+    else if (activeStatus == "Processing")
+    {
+        activeStatusDisplayName = "Đang chuẩn bị";
+    }
+    else if (activeStatus == "Completed")
+    {
+        activeStatusDisplayName = "Hoàn thành";
+    }
+    else if (activeStatus == "Cancelled")
+    {
+        activeStatusDisplayName = "Đã hủy";
+    }
+
+    var statusOptions = new List<SelectListItem>
+    {
+        new SelectListItem
+        {
+            Text = "Tất cả trạng thái",
+            Value = string.Empty,
+            Selected = string.IsNullOrEmpty(activeStatus)
+        },
+        new SelectListItem
+        {
+            Text = "Chờ xác nhận",
+            Value = "Pending",
+            Selected = activeStatus == "Pending"
+        },
+        new SelectListItem
+        {
+            Text = "Đã xác nhận",
+            Value = "Confirmed",
+            Selected = activeStatus == "Confirmed"
+        },
+        new SelectListItem
+        {
+            Text = "Đang chuẩn bị",
+            Value = "Processing",
+            Selected = activeStatus == "Processing"
+        },
+        new SelectListItem
+        {
+            Text = "Hoàn thành",
+            Value = "Completed",
+            Selected = activeStatus == "Completed"
+        },
+        new SelectListItem
+        {
+            Text = "Đã hủy",
+            Value = "Cancelled",
+            Selected = activeStatus == "Cancelled"
+        }
+    };
+    var todayButtonClass = activeDateFilter == "today"
+        ? "btn btn-primary btn-sm"
+        : "btn btn-default btn-sm";
+    var yesterdayButtonClass = activeDateFilter == "yesterday"
+        ? "btn btn-primary btn-sm"
+        : "btn btn-default btn-sm";
+    var last7DaysButtonClass = activeDateFilter == "last7days"
+        ? "btn btn-primary btn-sm"
+        : "btn btn-default btn-sm";
+    var allButtonClass = activeDateFilter == "all"
+        ? "btn btn-primary btn-sm"
+        : "btn btn-default btn-sm";
+}
+
+<main class="admin-shell">
+    <header class="admin-page-header">
+        <p class="admin-page-kicker">Theo dõi đơn hàng</p>
+        <h1>Quản lý đơn hàng</h1>
+        <p class="admin-page-lead">
+            Theo dõi công việc trong ngày mà vẫn giữ toàn bộ lịch sử đơn hàng.
+        </p>
+    </header>
+
+    @if (!string.IsNullOrWhiteSpace(successMessage))
+    {
+        <div class="alert alert-success">@successMessage</div>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(errorMessage))
+    {
+        <div class="alert alert-danger">@errorMessage</div>
+    }
+
+    <nav class="admin-toolbar" aria-label="Điều hướng quản lý đơn hàng">
+        <div class="admin-toolbar__actions">
+            @Html.ActionLink(
+                "Quay lại quản trị",
+                "Index",
+                "Admin",
+                null,
+                new { @class = "btn btn-default" })
+        </div>
+    </nav>
+
+    <section class="admin-toolbar admin-order-filters" aria-labelledby="admin-order-filter-title">
+        <div>
+            <strong id="admin-order-filter-title">Ngày đặt</strong>
+            <div class="admin-toolbar__actions">
+                @Html.ActionLink(
+                    "Hôm nay",
+                    "Orders",
+                    "Admin",
+                    new { dateFilter = "today", status = activeStatus },
+                    new
+                    {
+                        @class = todayButtonClass,
+                        aria_current = activeDateFilter == "today" ? "page" : "false"
+                    })
+                @Html.ActionLink(
+                    "Hôm qua",
+                    "Orders",
+                    "Admin",
+                    new { dateFilter = "yesterday", status = activeStatus },
+                    new
+                    {
+                        @class = yesterdayButtonClass,
+                        aria_current = activeDateFilter == "yesterday" ? "page" : "false"
+                    })
+                @Html.ActionLink(
+                    "7 ngày gần đây",
+                    "Orders",
+                    "Admin",
+                    new { dateFilter = "last7days", status = activeStatus },
+                    new
+                    {
+                        @class = last7DaysButtonClass,
+                        aria_current = activeDateFilter == "last7days" ? "page" : "false"
+                    })
+                @Html.ActionLink(
+                    "Tất cả lịch sử",
+                    "Orders",
+                    "Admin",
+                    new { dateFilter = "all", status = activeStatus },
+                    new
+                    {
+                        @class = allButtonClass,
+                        aria_current = activeDateFilter == "all" ? "page" : "false"
+                    })
+            </div>
+        </div>
+
+        @using (Html.BeginForm("Orders", "Admin", FormMethod.Get, new { @class = "form-inline" }))
+        {
+            @Html.Hidden("dateFilter", activeDateFilter)
+            <div class="form-group">
+                <label for="status">Trạng thái</label>
+                @Html.DropDownList(
+                    "status",
+                    statusOptions,
+                    new { @class = "form-control" })
+            </div>
+            <button type="submit" class="btn btn-primary">Lọc đơn hàng</button>
+        }
+    </section>
+
+    <p class="admin-page-lead">
+        <strong>Đang xem:</strong> @activeDateDisplayName · @activeStatusDisplayName
+    </p>
+
+    @if (olderUnfinishedOrderCount > 0)
+    {
+        <div class="alert alert-info admin-order-unfinished-notice" role="alert">
+            <strong>Có @olderUnfinishedOrderCount đơn từ ngày trước chưa hoàn tất.</strong>
+            @Html.ActionLink(
+                "Xem đơn chưa hoàn tất",
+                "Orders",
+                "Admin",
+                new { dateFilter = "all", status = string.Empty },
+                new { @class = "btn btn-default btn-sm" })
+        </div>
+    }
+
+    @if (Model == null || !Model.Any())
+    {
+        <section class="admin-empty-state">
+            <span class="admin-empty-state__icon" aria-hidden="true">ĐH</span>
+            <h2>Chưa có đơn hàng phù hợp với bộ lọc.</h2>
+        </section>
+    }
+    else
+    {
+        <section class="admin-table-card" aria-labelledby="order-table-title">
+            <h2 id="order-table-title" class="sr-only">Danh sách đơn hàng</h2>
+            <div class="table-responsive admin-table-responsive">
+            <table class="table admin-table">
+                <thead>
+                    <tr>
+                        <th scope="col">Mã đơn</th>
+                        <th scope="col">Khách hàng</th>
+                        <th scope="col">Email</th>
+                        <th scope="col">Ngày đặt</th>
+                        <th scope="col">Trạng thái</th>
+                        <th scope="col">Tổng thanh toán</th>
+                        <th scope="col">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        var statusClass = "status-chip--neutral";
+
+                        if (item.OrderStatus == "Pending")
+                        {
+                            statusClass = "status-chip--pending";
+                        }
+                        else if (item.OrderStatus == "Confirmed")
+                        {
+                            statusClass = "status-chip--confirmed";
+                        }
+                        else if (item.OrderStatus == "Processing")
+                        {
+                            statusClass = "status-chip--processing";
+                        }
+                        else if (item.OrderStatus == "Completed")
+                        {
+                            statusClass = "status-chip--completed";
+                        }
+                        else if (item.OrderStatus == "Cancelled")
+                        {
+                            statusClass = "status-chip--cancelled";
+                        }
+
+                        <tr>
+                            <td><strong>#@item.OrderId</strong></td>
+                            <td><strong>@item.CustomerName</strong></td>
+                            <td>@item.CustomerEmail</td>
+                            <td>@item.OrderDate.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td>
+                                <span class="status-chip @statusClass">@item.OrderStatusDisplayName</span>
+                            </td>
+                            <td class="admin-table__amount">@(item.FinalAmount.ToString("N0") + " ₫")</td>
+                            <td class="admin-table__actions">
+                                @Html.ActionLink(
+                                    "Xem chi tiết",
+                                    "OrderDetails",
+                                    "Admin",
+                                    new { id = item.OrderId },
+                                    new { @class = "btn btn-default btn-sm" })
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            </div>
+        </section>
+    }
+</main>

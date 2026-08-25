@@ -6,163 +6,237 @@
     var successMessage = TempData["SuccessMessage"] as string;
 }
 
-<main class="container">
-    <h1>Giỏ hàng</h1>
+<main class="container public-shell cart-page">
+    <header class="public-page-header">
+        <p class="public-page-header__eyebrow">Những món bạn đã chọn</p>
+        <h1>Giỏ hàng</h1>
+        <p class="public-page-header__lead">
+            Kiểm tra số lượng trước khi chuyển sang bước thanh toán.
+        </p>
+    </header>
 
     @if (!string.IsNullOrWhiteSpace(errorMessage))
     {
-        <div class="alert alert-danger">
+        <div class="alert alert-danger" role="alert">
             @errorMessage
         </div>
     }
 
     @if (!string.IsNullOrWhiteSpace(successMessage))
     {
-        <div class="alert alert-success">
+        <div class="alert alert-success" role="status">
             @successMessage
         </div>
     }
 
     @if (Model == null)
     {
-        <p>Không thể hiển thị giỏ hàng.</p>
+        <section class="public-empty-state" aria-labelledby="cart-unavailable-title">
+            <span class="public-empty-state__icon" aria-hidden="true">🛒</span>
+            <h2 id="cart-unavailable-title">Chưa thể mở giỏ hàng</h2>
+            <p>Không thể hiển thị giỏ hàng lúc này. Bạn vui lòng thử lại sau.</p>
+            <div class="public-empty-state__actions">
+                @Html.ActionLink(
+                    "Khám phá menu",
+                    "Index",
+                    "Product",
+                    null,
+                    new { @class = "btn btn-primary" })
+            </div>
+        </section>
     }
     else if (Model.Items == null || Model.Items.Count == 0)
     {
-        <p>Giỏ hàng của bạn hiện đang trống.</p>
-        <p>
-            @Html.ActionLink(
-                "Tiếp tục mua sắm",
-                "Index",
-                "Product",
-                null,
-                new { @class = "btn btn-primary" })
-        </p>
+        <section class="public-empty-state" aria-labelledby="empty-cart-title">
+            <span class="public-empty-state__icon" aria-hidden="true">🛒</span>
+            <h2 id="empty-cart-title">Giỏ hàng đang chờ món ngon</h2>
+            <p>Hãy chọn một thức uống yêu thích để bắt đầu đơn hàng nhé.</p>
+            <div class="public-empty-state__actions">
+                @Html.ActionLink(
+                    "Khám phá menu",
+                    "Index",
+                    "Product",
+                    null,
+                    new { @class = "btn btn-primary" })
+            </div>
+        </section>
     }
     else
     {
-        <div class="table-responsive">
-            <table class="table table-striped table-bordered">
-                <thead>
-                    <tr>
-                        <th scope="col">Ảnh</th>
-                        <th scope="col">Sản phẩm</th>
-                        <th scope="col">Đơn giá</th>
-                        <th scope="col">Số lượng</th>
-                        <th scope="col">Thành tiền</th>
-                        <th scope="col">Thao tác</th>
-                    </tr>
-                </thead>
-                <tbody>
+        <div class="cart-layout">
+            <section class="cart-items-panel" aria-labelledby="cart-items-title">
+                <h2 id="cart-items-title" class="cart-section-heading">
+                    Món đã chọn
+                    <span>@Model.TotalItems sản phẩm</span>
+                </h2>
+
+                <div class="cart-item-list">
                     @foreach (var item in Model.Items)
                     {
                         var productName = string.IsNullOrWhiteSpace(item.ProductName)
                             ? "Sản phẩm không khả dụng"
                             : item.ProductName;
+                        var hasProductDetails = item.ProductId > 0;
 
-                        <tr>
-                            <td>
+                        <article class="cart-item-card">
+                            <div class="cart-item-card__media">
                                 @if (string.IsNullOrWhiteSpace(item.ImageUrl))
                                 {
-                                    <span>Chưa có ảnh</span>
+                                    if (hasProductDetails)
+                                    {
+                                        <a href="@Url.Action("Details", "Product", new { id = item.ProductId })"
+                                           class="cart-item-card__image-link"
+                                           aria-label="Xem chi tiết @productName">
+                                            <span class="cart-item-card__placeholder" aria-hidden="true">☕</span>
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <span class="cart-item-card__placeholder" aria-label="Chưa có ảnh">☕</span>
+                                    }
+                                }
+                                else if (hasProductDetails)
+                                {
+                                    <a href="@Url.Action("Details", "Product", new { id = item.ProductId })"
+                                       class="cart-item-card__image-link">
+                                        <img src="@Url.Content(item.ImageUrl)"
+                                             alt="@productName"
+                                             class="img-responsive cart-item-card__image"
+                                             loading="lazy" />
+                                    </a>
                                 }
                                 else
                                 {
                                     <img src="@Url.Content(item.ImageUrl)"
                                          alt="@productName"
-                                         class="img-responsive" />
+                                         class="img-responsive cart-item-card__image"
+                                         loading="lazy" />
                                 }
-                            </td>
-                            <td>@productName</td>
-                            <td>@(item.UnitPrice.ToString("N0") + " đ")</td>
-                            <td>
-                                @using (Html.BeginForm(
-                                    "UpdateQuantity",
-                                    "Cart",
-                                    FormMethod.Post,
-                                    new { @class = "form-inline" }))
-                                {
-                                    @Html.AntiForgeryToken()
-                                    @Html.Hidden("cartItemId", item.CartItemId)
+                            </div>
 
-                                    <div class="form-group">
-                                        <label class="sr-only"
-                                               for="quantity-@item.CartItemId">
-                                            Số lượng
-                                        </label>
-                                        <input type="number"
-                                               id="quantity-@item.CartItemId"
-                                               name="quantity"
-                                               value="@item.Quantity"
-                                               min="1"
-                                               step="1"
-                                               class="form-control" />
-                                    </div>
+                            <div class="cart-item-card__content">
+                                <h3 class="cart-item-card__name">
+                                    @if (hasProductDetails)
+                                    {
+                                        @Html.ActionLink(
+                                            productName,
+                                            "Details",
+                                            "Product",
+                                            new { id = item.ProductId },
+                                            new { @class = "cart-item-card__name-link" })
+                                    }
+                                    else
+                                    {
+                                        @productName
+                                    }
+                                </h3>
 
-                                    <button type="submit"
-                                            class="btn btn-primary btn-sm">
-                                        Cập nhật
-                                    </button>
-                                }
-                            </td>
-                            <td>@(item.LineTotal.ToString("N0") + " đ")</td>
-                            <td>
+                                <p class="cart-item-card__unit-price">
+                                    Đơn giá <strong>@(item.UnitPrice.ToString("N0") + " đ")</strong>
+                                </p>
+
+                                <div class="cart-item-card__controls">
+                                    @using (Html.BeginForm(
+                                        "UpdateQuantity",
+                                        "Cart",
+                                        FormMethod.Post,
+                                        new { @class = "cart-quantity-form" }))
+                                    {
+                                        @Html.AntiForgeryToken()
+                                        @Html.Hidden("cartItemId", item.CartItemId)
+
+                                        <div class="cart-quantity-form__field">
+                                            <label for="quantity-@item.CartItemId">Số lượng</label>
+                                            <input type="number"
+                                                   id="quantity-@item.CartItemId"
+                                                   name="quantity"
+                                                   value="@item.Quantity"
+                                                   min="1"
+                                                   step="1"
+                                                   class="form-control" />
+                                        </div>
+
+                                        <button type="submit"
+                                                class="btn btn-default btn-sm cart-update-button">
+                                            Cập nhật
+                                        </button>
+                                    }
+                                </div>
+                            </div>
+
+                            <div class="cart-item-card__total">
+                                <span class="cart-item-card__total-label">Thành tiền</span>
+                                <strong class="cart-item-card__total-value">
+                                    @(item.LineTotal.ToString("N0") + " đ")
+                                </strong>
+
                                 @using (Html.BeginForm(
                                     "RemoveItem",
                                     "Cart",
                                     FormMethod.Post,
-                                    new { @class = "form-inline" }))
+                                    new { @class = "cart-remove-form" }))
                                 {
                                     @Html.AntiForgeryToken()
                                     @Html.Hidden("cartItemId", item.CartItemId)
 
                                     <button type="submit"
-                                            class="btn btn-danger btn-sm">
+                                            class="btn btn-danger btn-sm cart-remove-button">
                                         Xóa
                                     </button>
                                 }
-                            </td>
-                        </tr>
+                            </div>
+                        </article>
                     }
-                </tbody>
-            </table>
+                </div>
+            </section>
+
+            <aside class="cart-summary-card" aria-labelledby="cart-summary-title">
+                <h2 id="cart-summary-title" class="cart-summary-card__heading">
+                    Tóm tắt đơn hàng
+                </h2>
+
+                <div class="cart-summary-card__rows">
+                    <div class="cart-summary-card__row">
+                        <span>Tổng số lượng</span>
+                        <strong>@Model.TotalItems</strong>
+                    </div>
+                    <div class="cart-summary-card__row cart-summary-card__total">
+                        <span>Tổng tiền</span>
+                        <strong>@(Model.CartTotal.ToString("N0") + " đ")</strong>
+                    </div>
+                </div>
+
+                <div class="cart-summary-card__actions">
+                    @Html.ActionLink(
+                        "Thanh toán",
+                        "Index",
+                        "Checkout",
+                        null,
+                        new { @class = "btn btn-primary" })
+
+                    @Html.ActionLink(
+                        "Tiếp tục mua sắm",
+                        "Index",
+                        "Product",
+                        null,
+                        new { @class = "btn btn-default" })
+                </div>
+
+                <div class="cart-clear-area">
+                    @using (Html.BeginForm(
+                        "ClearCart",
+                        "Cart",
+                        FormMethod.Post,
+                        new { @class = "cart-clear-form" }))
+                    {
+                        @Html.AntiForgeryToken()
+
+                        <button type="submit" class="btn btn-danger cart-clear-button">
+                            Xóa toàn bộ giỏ hàng
+                        </button>
+                    }
+                </div>
+            </aside>
         </div>
-
-        <div>
-            <p><strong>Tổng số lượng:</strong> @Model.TotalItems</p>
-            <p>
-                <strong>Tổng tiền:</strong>
-                @(Model.CartTotal.ToString("N0") + " đ")
-            </p>
-        </div>
-
-        <p>
-            @Html.ActionLink(
-                "Tiếp tục mua sắm",
-                "Index",
-                "Product",
-                null,
-                new { @class = "btn btn-default" })
-
-            @Html.ActionLink(
-                "Thanh toán",
-                "Index",
-                "Checkout",
-                null,
-                new { @class = "btn btn-primary" })
-        </p>
-
-        using (Html.BeginForm(
-            "ClearCart",
-            "Cart",
-            FormMethod.Post,
-            new { @class = "form-inline" }))
-        {
-            @Html.AntiForgeryToken()
-
-            <button type="submit" class="btn btn-danger">
-                Xóa toàn bộ giỏ hàng
-            </button>
-        }
     }
 </main>

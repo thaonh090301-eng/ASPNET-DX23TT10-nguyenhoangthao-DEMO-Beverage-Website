@@ -31,6 +31,17 @@ namespace BeverageWebsite.ViewModels
         public string ImageUrl { get; set; }
 
         /// <summary>
+        /// Gets or sets a value indicating whether the product is selected for
+        /// the featured-products area on the home page.
+        /// </summary>
+        public bool IsFeatured { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional, whitelisted merchandising badge type.
+        /// </summary>
+        public string BadgeType { get; set; }
+
+        /// <summary>
         /// Gets or sets the available stock quantity.
         /// </summary>
         public int StockQuantity { get; set; }

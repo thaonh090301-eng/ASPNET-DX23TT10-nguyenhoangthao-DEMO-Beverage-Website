@@ -1,52 +1,451 @@
+@{
+    var currentController = ViewContext.RouteData.Values["controller"] as string;
+    var pageScopeClass = string.Equals(
+        currentController,
+        "Admin",
+        System.StringComparison.OrdinalIgnoreCase)
+        ? "admin-page"
+        : "public-page";
+}
 <!DOCTYPE html>
-<html>
+<html lang="vi" class="no-js">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script>
+        document.documentElement.className = document.documentElement.className.replace(/\bno-js\b/, "js");
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet"
-          href="@Url.Content("~/Content/site.css")" />
-    <title>Beverage Website</title>
+          href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&amp;family=Lora:wght@500;600;700&amp;display=swap" />
+    <link rel="stylesheet"
+          href="@Url.Content("~/Content/site.css")?v=20260818-3" />
+    <title>@ViewBag.Title - Little Cloud Website</title>
 </head>
-<body>
-    <nav class="navbar navbar-default" aria-label="Điều hướng chính">
-        <div class="container">
-            <ul class="nav navbar-nav">
-                <li>@Html.ActionLink("Trang chủ", "Index", "Home")</li>
-                <li>@Html.ActionLink("Danh mục", "Index", "Category")</li>
-                <li>@Html.ActionLink("Sản phẩm", "Index", "Product")</li>
-            </ul>
+<body id="page-top" class="@pageScopeClass">
+    <header class="site-header">
+        <div class="site-header__inner">
+            <button type="button"
+                    class="header-action-button mobile-menu-toggle"
+                    aria-label="Mở menu"
+                    aria-controls="site-navigation"
+                    aria-expanded="false"
+                    data-label-open="Mở menu"
+                    data-label-close="Đóng menu"
+                    data-responsive-toggle="true"
+                    data-site-toggle>
+                <svg class="site-icon site-icon--menu" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"></path>
+                </svg>
+                <svg class="site-icon site-icon--close" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"></path>
+                </svg>
+            </button>
 
-            @if (!Request.IsAuthenticated)
-            {
-                <ul class="nav navbar-nav navbar-right">
-                    <li>@Html.ActionLink("Đăng nhập", "Login", "Account")</li>
-                    <li>@Html.ActionLink("Đăng ký", "Register", "Account")</li>
+            <nav id="site-navigation"
+                 class="site-navigation"
+                 aria-label="Điều hướng chính">
+                <ul class="site-navigation__list">
+                    <li class="site-navigation__item">
+                        @Html.ActionLink("TRANG CHỦ", "Index", "Home", null, new { @class = "site-navigation__link" })
+                    </li>
+                    <li class="site-navigation__item site-navigation__item--dropdown">
+                        <button type="button"
+                                class="site-navigation__link navigation-dropdown-toggle"
+                                aria-controls="catalog-navigation-dropdown"
+                                aria-expanded="false"
+                                aria-haspopup="true"
+                                data-site-toggle>
+                            <span>MENU</span>
+                            <svg class="site-icon site-icon--chevron" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                <path d="m7 9 5 5 5-5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"></path>
+                            </svg>
+                        </button>
+                        @Html.Action("CatalogNavigation", "Navigation")
+                    </li>
+                    <li class="site-navigation__item">
+                        @Html.ActionLink("BLOG", "Blog", "Home", null, new { @class = "site-navigation__link" })
+                    </li>
+                    <li class="site-navigation__item">
+                        @Html.ActionLink("LIÊN HỆ", "Contact", "Home", null, new { @class = "site-navigation__link" })
+                    </li>
                 </ul>
-            }
-            else
-            {
-                <ul class="nav navbar-nav navbar-right">
-                    <li>@Html.ActionLink("Giỏ hàng", "Index", "Cart")</li>
-                    <li>@Html.ActionLink("Đơn hàng của tôi", "Index", "Order")</li>
-                    <li>@Html.ActionLink("Hồ sơ", "Profile", "Account")</li>
-                    @Html.Action("AdminNavigation", "Navigation")
-                </ul>
+            </nav>
 
-                using (Html.BeginForm(
-                    "Logout",
-                    "Account",
-                    FormMethod.Post,
-                    new { @class = "navbar-form navbar-right" }))
-                {
-                    @Html.AntiForgeryToken()
-                    <button type="submit" class="btn btn-link navbar-btn">
-                        Đăng xuất
+            <a class="site-brand" href="@Url.Action("Index", "Home")" aria-label="Little Cloud Coffee and Tea - Trang chủ">
+                <img src="@Url.Content("~/Content/Images/logo.png")" alt="Little Cloud" class="site-brand__image" />
+            </a>
+
+            <div class="header-actions">
+                <button type="button"
+                        class="header-action-button"
+                        aria-label="Mở tìm kiếm"
+                        aria-controls="site-search-panel"
+                        aria-expanded="false"
+                        data-label-open="Mở tìm kiếm"
+                        data-label-close="Đóng tìm kiếm"
+                        data-focus-target="site-search-input"
+                        data-site-toggle>
+                    <svg class="site-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                        <circle cx="10.8" cy="10.8" r="6.3" fill="none" stroke="currentColor" stroke-width="1.8"></circle>
+                        <path d="m15.5 15.5 4 4" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"></path>
+                    </svg>
+                </button>
+
+                <div class="header-dropdown">
+                    <button type="button"
+                            class="header-action-button"
+                            id="account-dropdown-toggle"
+                            aria-label="Mở tài khoản"
+                            aria-controls="account-dropdown"
+                            aria-expanded="false"
+                            aria-haspopup="true"
+                            data-label-open="Mở tài khoản"
+                            data-label-close="Đóng tài khoản"
+                            data-site-toggle>
+                        <svg class="site-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                            <circle cx="12" cy="8" r="3.5" fill="none" stroke="currentColor" stroke-width="1.8"></circle>
+                            <path d="M5.5 20a6.5 6.5 0 0 1 13 0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"></path>
+                        </svg>
                     </button>
-                }
-            }
+
+                    <div id="account-dropdown"
+                         class="navigation-dropdown navigation-dropdown--right account-dropdown"
+                         aria-labelledby="account-dropdown-toggle">
+                        <ul class="navigation-dropdown-list">
+                            @if (!Request.IsAuthenticated)
+                            {
+                                <li>@Html.ActionLink("Đăng nhập", "Login", "Account", null, new { @class = "navigation-dropdown-link" })</li>
+                                <li>@Html.ActionLink("Đăng ký tài khoản", "Register", "Account", null, new { @class = "navigation-dropdown-link" })</li>
+                            }
+                            else
+                            {
+                                <li>@Html.ActionLink("Hồ sơ của tôi", "Profile", "Account", null, new { @class = "navigation-dropdown-link" })</li>
+                                <li>@Html.ActionLink("Đơn hàng của tôi", "Index", "Order", null, new { @class = "navigation-dropdown-link" })</li>
+                                @Html.Action("AdminNavigation", "Navigation")
+                                <li>
+                                    @using (Html.BeginForm(
+                                        "Logout",
+                                        "Account",
+                                        FormMethod.Post,
+                                        new { @class = "navigation-dropdown-form" }))
+                                    {
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="navigation-dropdown-button">
+                                            Đăng xuất
+                                        </button>
+                                    }
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="header-dropdown">
+                    <button type="button"
+                            class="header-action-button"
+                            id="cart-dropdown-toggle"
+                            aria-label="Mở giỏ hàng và đơn hàng"
+                            aria-controls="cart-dropdown"
+                            aria-expanded="false"
+                            aria-haspopup="true"
+                            data-label-open="Mở giỏ hàng và đơn hàng"
+                            data-label-close="Đóng giỏ hàng và đơn hàng"
+                            data-site-toggle>
+                        <svg class="site-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                            <path d="M3.5 5h2l1.8 9.2h9.8l2-6.3H6.1" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"></path>
+                            <circle cx="9" cy="18.5" r="1.2" fill="currentColor"></circle>
+                            <circle cx="17" cy="18.5" r="1.2" fill="currentColor"></circle>
+                        </svg>
+                    </button>
+
+                    <div id="cart-dropdown"
+                         class="navigation-dropdown navigation-dropdown--right cart-dropdown"
+                         aria-labelledby="cart-dropdown-toggle">
+                        <ul class="navigation-dropdown-list">
+                            <li>@Html.ActionLink("Giỏ hàng", "Index", "Cart", null, new { @class = "navigation-dropdown-link" })</li>
+                            <li>@Html.ActionLink("Đơn hàng của tôi", "Index", "Order", null, new { @class = "navigation-dropdown-link" })</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
         </div>
-    </nav>
+
+        <div id="site-search-panel" class="search-panel">
+            <div class="search-panel__inner">
+                <form class="site-search"
+                      action="@Url.Action("Index", "Product")"
+                      method="get"
+                      role="search">
+                    <label class="visually-hidden" for="site-search-input">Tìm kiếm sản phẩm</label>
+                    <input id="site-search-input"
+                           class="site-search__input"
+                           type="search"
+                           name="keyword"
+                           placeholder="Tìm kiếm đồ uống..."
+                           autocomplete="off" />
+                    <button type="submit" class="site-search__submit" aria-label="Tìm kiếm">
+                        <svg class="site-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                            <circle cx="10.8" cy="10.8" r="6.3" fill="none" stroke="currentColor" stroke-width="1.8"></circle>
+                            <path d="m15.5 15.5 4 4" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"></path>
+                        </svg>
+                    </button>
+                </form>
+                <button type="button"
+                        class="search-panel__close"
+                        aria-label="Đóng tìm kiếm"
+                        data-site-close="site-search-panel">
+                    <svg class="site-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                        <path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </header>
 
     @RenderBody()
+
+    <footer class="site-footer">
+        <div class="site-footer__inner">
+            <div class="site-footer__grid">
+                <div class="site-footer__column site-footer__brand">
+                    <a class="site-footer__brand-link" href="@Url.Action("Index", "Home")">
+                        <span class="site-footer__brand-name">LITTLE CLOUD</span>
+                        <span class="site-footer__brand-tagline">COFFEE &amp; TEA</span>
+                    </a>
+                    <p>Một góc nhỏ dành cho những ly đồ uống được chuẩn bị cẩn thận và những khoảng nghỉ thật dịu dàng.</p>
+                </div>
+
+                <nav class="site-footer__column" aria-label="Khám phá">
+                    <h2 class="site-footer__heading">Khám phá</h2>
+                    <ul class="site-footer__links">
+                        <li>@Html.ActionLink("Trang chủ", "Index", "Home")</li>
+                        <li>@Html.ActionLink("Menu", "Index", "Product")</li>
+                        <li>@Html.ActionLink("Danh mục", "Index", "Category")</li>
+                        <li>@Html.ActionLink("Blog", "Blog", "Home")</li>
+                    </ul>
+                </nav>
+
+                <nav class="site-footer__column" aria-label="Hỗ trợ">
+                    <h2 class="site-footer__heading">Hỗ trợ</h2>
+                    <ul class="site-footer__links">
+                        <li>@Html.ActionLink("Giỏ hàng", "Index", "Cart")</li>
+                        <li>@Html.ActionLink("Đơn hàng của tôi", "Index", "Order")</li>
+                        <li>@Html.ActionLink("Hồ sơ", "Profile", "Account")</li>
+                        <li>@Html.ActionLink("Liên hệ", "Contact", "Home")</li>
+                    </ul>
+                </nav>
+
+                <div class="site-footer__column">
+                    <h2 class="site-footer__heading">Thông tin</h2>
+                    <dl class="site-footer__details">
+                        <div>
+                            <dt>Địa chỉ:</dt>
+                            <dd>DX23TT10 - 170123374 - Nguyễn Hoàng Thảo</dd>
+                        </div>
+                        <div>
+                            <dt>Điện thoại:</dt>
+                            <dd><span>0343 431 374</span></dd>
+                        </div>
+                        <div>
+                            <dt>Giờ mở cửa:</dt>
+                            <dd>06:00 - 22:00</dd>
+                        </div>
+                        <div>
+                            <dt>Email:</dt>
+                            <dd><span>thaonh090301@sv-onuni.edu.vn</span></dd>
+                        </div>
+                    </dl>
+                </div>
+            </div>
+
+            <div class="site-footer__bottom">
+                <p>&copy; @DateTime.Now.Year Little Cloud Coffee &amp; Tea. Mọi quyền được bảo lưu.</p>
+                <button type="button" class="back-to-top" aria-label="Về đầu trang" data-back-to-top>
+                    <svg class="site-icon site-icon--chevron-up" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                        <path d="m7 14 5-5 5 5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        (function () {
+            "use strict";
+
+            var toggles = document.querySelectorAll("[data-site-toggle]");
+            var closeButtons = document.querySelectorAll("[data-site-close]");
+            var lastOpenedButton = null;
+
+            function each(items, callback) {
+                Array.prototype.forEach.call(items, callback);
+            }
+
+            function getPanel(button) {
+                var panelId = button.getAttribute("aria-controls");
+                return panelId ? document.getElementById(panelId) : null;
+            }
+
+            function usesResponsiveCollapse(button) {
+                return button.getAttribute("data-responsive-toggle") === "true";
+            }
+
+            function setPanelState(button, panel, isOpen) {
+                if (!button || !panel) {
+                    return;
+                }
+
+                button.setAttribute("aria-expanded", isOpen ? "true" : "false");
+                panel.classList.toggle("is-open", isOpen);
+
+                if (!usesResponsiveCollapse(button)) {
+                    panel.hidden = !isOpen;
+                }
+
+                var label = button.getAttribute(isOpen ? "data-label-close" : "data-label-open");
+                if (label) {
+                    button.setAttribute("aria-label", label);
+                }
+            }
+
+            function closeDescendantPanels(panel) {
+                each(toggles, function (button) {
+                    var childPanel = getPanel(button);
+                    if (childPanel && panel.contains(button)) {
+                        setPanelState(button, childPanel, false);
+                    }
+                });
+            }
+
+            function closePanel(button, panel) {
+                closeDescendantPanels(panel);
+                setPanelState(button, panel, false);
+            }
+
+            function closeOtherPanels(activeButton, activePanel) {
+                each(toggles, function (button) {
+                    var panel = getPanel(button);
+                    var isAncestor = panel && panel.contains(activeButton);
+                    var isDescendant = activePanel && activePanel.contains(button);
+
+                    if (button !== activeButton
+                        && panel
+                        && button.getAttribute("aria-expanded") === "true"
+                        && !isAncestor
+                        && !isDescendant) {
+                        closePanel(button, panel);
+                    }
+                });
+            }
+
+            function openPanel(button, panel) {
+                closeOtherPanels(button, panel);
+                setPanelState(button, panel, true);
+                lastOpenedButton = button;
+
+                var focusTargetId = button.getAttribute("data-focus-target");
+                var focusTarget = focusTargetId ? document.getElementById(focusTargetId) : null;
+                if (focusTarget) {
+                    focusTarget.focus();
+                }
+            }
+
+            function findToggleForPanel(panelId) {
+                var match = null;
+                each(toggles, function (button) {
+                    if (!match && button.getAttribute("aria-controls") === panelId) {
+                        match = button;
+                    }
+                });
+                return match;
+            }
+
+            each(toggles, function (button) {
+                var panel = getPanel(button);
+                if (!panel) {
+                    return;
+                }
+
+                setPanelState(button, panel, false);
+                button.addEventListener("click", function () {
+                    var isOpen = button.getAttribute("aria-expanded") === "true";
+                    if (isOpen) {
+                        closePanel(button, panel);
+                    } else {
+                        openPanel(button, panel);
+                    }
+                });
+            });
+
+            each(closeButtons, function (button) {
+                button.addEventListener("click", function () {
+                    var panelId = button.getAttribute("data-site-close");
+                    var panel = document.getElementById(panelId);
+                    var toggle = findToggleForPanel(panelId);
+                    closePanel(toggle, panel);
+                    if (toggle) {
+                        toggle.focus();
+                    }
+                });
+            });
+
+            document.addEventListener("click", function (event) {
+                each(toggles, function (button) {
+                    var panel = getPanel(button);
+                    if (panel
+                        && button.getAttribute("aria-expanded") === "true"
+                        && !button.contains(event.target)
+                        && !panel.contains(event.target)) {
+                        closePanel(button, panel);
+                    }
+                });
+            });
+
+            document.addEventListener("keydown", function (event) {
+                if (event.key !== "Escape" && event.keyCode !== 27) {
+                    return;
+                }
+
+                var focusTarget = lastOpenedButton;
+                each(toggles, function (button) {
+                    var panel = getPanel(button);
+                    if (focusTarget
+                        && panel
+                        && button.getAttribute("aria-expanded") === "true"
+                        && panel.contains(focusTarget)) {
+                        focusTarget = button;
+                    }
+                });
+
+                each(toggles, function (button) {
+                    var panel = getPanel(button);
+                    if (panel && button.getAttribute("aria-expanded") === "true") {
+                        closePanel(button, panel);
+                    }
+                });
+
+                if (focusTarget && document.documentElement.contains(focusTarget)) {
+                    focusTarget.focus();
+                }
+                lastOpenedButton = null;
+            });
+
+            var backToTop = document.querySelector("[data-back-to-top]");
+            if (backToTop) {
+                backToTop.addEventListener("click", function () {
+                    var reduceMotion = window.matchMedia
+                        && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+                    try {
+                        window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
+                    } catch (error) {
+                        window.scrollTo(0, 0);
+                    }
+                });
+            }
+        }());
+    </script>
 </body>
 </html>

@@ -1,8 +1,39 @@
 @using System.Linq
 @model IEnumerable<BeverageWebsite.ViewModels.ProductCatalogItemViewModel>
 
+@helper RenderProductBadge(string badgeType)
+{
+    if (string.Equals(badgeType, "Featured", System.StringComparison.Ordinal))
+    {
+        <span class="product-badge product-badge--featured">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M12 3.2l2.72 5.51 6.08.88-4.4 4.29 1.04 6.05L12 17.07l-5.44 2.86 1.04-6.05-4.4-4.29 6.08-.88L12 3.2Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>
+            <span>Món nổi bật</span>
+        </span>
+    }
+    else if (string.Equals(badgeType, "BestSeller", System.StringComparison.Ordinal))
+    {
+        <span class="product-badge product-badge--bestseller">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M13.5 2.75c.65 3.8-2.35 5.13-2.35 8.05 0 1.25.68 2.08 1.73 2.7-.13-2.05 1.2-3.26 2.65-4.37 1.22 2.07 3.47 3.72 3.47 6.7 0 3.43-2.7 6.2-6.03 6.2S5.5 19.76 5.5 16.33c0-4.16 2.68-7.02 8-13.58Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>
+            <span>Best seller</span>
+        </span>
+    }
+    else if (string.Equals(badgeType, "New", System.StringComparison.Ordinal))
+    {
+        <span class="product-badge product-badge--new">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M11.5 3.25c.65 4.49 3.26 7.1 7.75 7.75-4.49.65-7.1 3.26-7.75 7.75C10.85 14.26 8.24 11.65 3.75 11c4.49-.65 7.1-3.26 7.75-7.75ZM19 3v4m2-2h-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>
+            <span>Món mới</span>
+        </span>
+    }
+}
+
 @{
-    ViewBag.Title = "Sản phẩm";
+    ViewBag.Title = "Menu đồ uống";
     var keyword = ViewBag.Keyword as string ?? string.Empty;
     var hasKeyword = !string.IsNullOrWhiteSpace(keyword);
     var categories = ViewBag.Categories as IEnumerable<BeverageWebsite.Models.Category>
@@ -15,126 +46,215 @@
     var hasValidCategory = ViewData.ModelState.IsValid
         && selectedCategoryId.HasValue
         && !hasKeyword;
+    var products = Model ?? Enumerable.Empty<BeverageWebsite.ViewModels.ProductCatalogItemViewModel>();
 }
 
-<main>
-    <h1>Sản phẩm</h1>
-
-    @using (Html.BeginForm(
-        "Index",
-        "Product",
-        FormMethod.Get,
-        new { @class = "form-inline", role = "search" }))
-    {
-        <div class="form-group">
-            <label class="sr-only" for="keyword">Từ khóa tìm kiếm</label>
-            <input type="text"
-                   id="keyword"
-                   name="keyword"
-                   value="@keyword"
-                   class="form-control"
-                   placeholder="Nhập tên hoặc mô tả sản phẩm" />
+<main class="catalog-page">
+    <header class="catalog-page__hero">
+        <div class="catalog-shell">
+            <p class="section-eyebrow">Chọn một hương vị cho hôm nay</p>
+            <h1>Menu đồ uống</h1>
+            <p>Khám phá những món uống đang có tại Little Cloud và chọn ly phù hợp với khoảng nghỉ của bạn.</p>
         </div>
-        <div class="form-group">
-            <label class="sr-only" for="categoryId">Danh mục</label>
-            @Html.DropDownList(
-                "categoryId",
-                new SelectList(
-                    categories,
-                    "CategoryId",
-                    "CategoryName",
-                    selectedCategoryId),
-                "Tất cả danh mục",
-                new { @class = "form-control" })
-        </div>
-        <button type="submit" class="btn btn-primary">Tìm kiếm</button>
-        @Html.ActionLink(
-            "Xóa tìm kiếm",
-            "Index",
-            "Product",
-            null,
-            new { @class = "btn btn-default" })
-    }
+    </header>
 
-    @Html.ValidationSummary(false, "", new { @class = "text-danger" })
+    <div class="catalog-shell">
+        <section class="catalog-search" aria-labelledby="catalog-search-title">
+            <div>
+                <h2 id="catalog-search-title">Tìm món bạn yêu thích</h2>
+                <p>Tìm theo tên hoặc mô tả món uống.</p>
+            </div>
 
-    @if (hasValidKeyword)
-    {
-        <h2>Kết quả tìm kiếm cho: @keyword</h2>
-    }
-    else if (hasValidCategory && selectedCategory != null)
-    {
-        <h2>Sản phẩm thuộc danh mục: @selectedCategory.CategoryName</h2>
-    }
+            @using (Html.BeginForm(
+                "Index",
+                "Product",
+                FormMethod.Get,
+                new { @class = "catalog-search__form", role = "search" }))
+            {
+                <label class="visually-hidden" for="catalog-keyword">Từ khóa tìm kiếm</label>
+                <input type="search"
+                       id="catalog-keyword"
+                       name="keyword"
+                       value="@keyword"
+                       class="customer-input catalog-search__input"
+                       placeholder="Nhập tên hoặc mô tả sản phẩm"
+                       autocomplete="off" />
+                <button type="submit" class="customer-action customer-action--primary">
+                    Tìm kiếm
+                </button>
+                @Html.ActionLink(
+                    "Xóa tìm kiếm",
+                    "Index",
+                    "Product",
+                    null,
+                    new { @class = "customer-action customer-action--secondary" })
+            }
+        </section>
 
-    @if (Model == null || !Model.Any())
-    {
-        if (ViewData.ModelState.IsValid)
-        {
-            if (hasValidKeyword)
-            {
-                <p>Không tìm thấy sản phẩm phù hợp.</p>
-            }
-            else if (hasValidCategory)
-            {
-                <p>Danh mục này hiện chưa có sản phẩm.</p>
-            }
-            else
-            {
-                <p>Hiện chưa có sản phẩm.</p>
-            }
-        }
-    }
-    else
-    {
-        <div class="table-responsive">
-            <table class="table table-striped table-bordered">
-                <thead>
-                    <tr>
-                        <th scope="col">Ảnh</th>
-                        <th scope="col">Tên sản phẩm</th>
-                        <th scope="col">Mô tả</th>
-                        <th scope="col">Giá</th>
-                        <th scope="col">Trạng thái</th>
-                        <th scope="col">Chi tiết</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var product in Model)
+        @Html.ValidationSummary(false, "", new { @class = "catalog-validation text-danger", role = "alert" })
+
+        <div class="catalog-layout">
+            <aside class="catalog-sidebar" aria-labelledby="catalog-categories-title">
+                <h2 id="catalog-categories-title">Danh mục</h2>
+                <nav aria-label="Danh mục sản phẩm">
+                    <ul class="catalog-category-list">
+                        <li>
+                            <a class="catalog-category-link @(!selectedCategoryId.HasValue ? "is-active" : string.Empty)"
+                               href="@Url.Action("Index", "Product")"
+                               aria-current="@(!selectedCategoryId.HasValue ? "page" : "false")">
+                                Tất cả sản phẩm
+                            </a>
+                        </li>
+                        @foreach (var category in categories)
+                        {
+                            var isSelected = selectedCategoryId.HasValue
+                                && selectedCategoryId.Value == category.CategoryId;
+                            <li>
+                                <a class="catalog-category-link @(isSelected ? "is-active" : string.Empty)"
+                                   href="@Url.Action("Index", "Product", new { categoryId = category.CategoryId })"
+                                   aria-current="@(isSelected ? "page" : "false")">
+                                    @category.CategoryName
+                                </a>
+                            </li>
+                        }
+                    </ul>
+                </nav>
+            </aside>
+
+            <section class="catalog-results" aria-labelledby="catalog-results-title">
+                <header class="catalog-results__heading">
+                    @if (hasValidKeyword)
                     {
-                        <tr>
-                            <td>
-                                @if (string.IsNullOrWhiteSpace(product.ImageUrl))
-                                {
-                                    <span>Chưa có ảnh</span>
-                                }
-                                else
-                                {
-                                    <img src="@Url.Content(product.ImageUrl)"
-                                         alt="@product.ProductName"
-                                         class="img-responsive" />
-                                }
-                            </td>
-                            <td>@product.ProductName</td>
-                            <td>
-                                @(string.IsNullOrWhiteSpace(product.Description)
-                                    ? "Không có mô tả."
-                                    : product.Description)
-                            </td>
-                            <td>@product.Price.ToString("N0") ₫</td>
-                            <td>@(product.IsInStock ? "Còn món" : "Tạm hết món")</td>
-                            <td>
-                                @Html.ActionLink(
-                                    "Xem chi tiết",
-                                    "Details",
-                                    "Product",
-                                    new { id = product.ProductId },
-                                    new { @class = "btn btn-default btn-sm" })
-                            </td>
-                        </tr>
+                        <p class="section-eyebrow">Kết quả tìm kiếm</p>
+                        <h2 id="catalog-results-title">Món phù hợp với “@keyword”</h2>
                     }
-                </tbody>
-            </table>
+                    else if (hasValidCategory && selectedCategory != null)
+                    {
+                        <p class="section-eyebrow">Danh mục đang chọn</p>
+                        <h2 id="catalog-results-title">@selectedCategory.CategoryName</h2>
+                    }
+                    else
+                    {
+                        <p class="section-eyebrow">Menu hiện tại</p>
+                        <h2 id="catalog-results-title">Tất cả món uống</h2>
+                    }
+                </header>
+
+                @if (!products.Any())
+                {
+                    if (ViewData.ModelState.IsValid)
+                    {
+                        <div class="catalog-empty-state">
+                            @if (hasValidKeyword)
+                            {
+                                <p>Không tìm thấy sản phẩm phù hợp.</p>
+                            }
+                            else if (hasValidCategory)
+                            {
+                                <p>Danh mục này hiện chưa có sản phẩm.</p>
+                            }
+                            else
+                            {
+                                <p>Hiện chưa có sản phẩm.</p>
+                            }
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="product-grid product-grid--catalog">
+                        @foreach (var product in products)
+                        {
+                            var detailsUrl = Url.Action(
+                                "Details",
+                                "Product",
+                                new { id = product.ProductId });
+
+                            <article class="product-card">
+                                <a class="product-card__media product-media"
+                                   href="@detailsUrl"
+                                   aria-label="Mở trang sản phẩm @product.ProductName">
+                                    @RenderProductBadge(product.BadgeType)
+                                    @if (string.IsNullOrWhiteSpace(product.ImageUrl))
+                                    {
+                                        <span class="product-card__placeholder" aria-hidden="true">
+                                            <svg viewBox="0 0 96 96" focusable="false">
+                                                <path d="M20 32h48v28a17 17 0 0 1-17 17H37a17 17 0 0 1-17-17V32Z" fill="none" stroke="currentColor" stroke-width="4"></path>
+                                                <path d="M68 40h7a11 11 0 0 1 0 22h-7M32 23c0-5 5-5 5-10m14 10c0-5 5-5 5-10" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"></path>
+                                            </svg>
+                                            <span>Hình ảnh đang cập nhật</span>
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <img src="@Url.Content(product.ImageUrl)"
+                                             alt="@product.ProductName"
+                                             class="product-card__image"
+                                             loading="lazy" />
+                                    }
+                                </a>
+
+                                <div class="product-card__body">
+                                    <div class="product-card__heading">
+                                        <h3>
+                                            <a class="product-card__name" href="@detailsUrl">
+                                                @product.ProductName
+                                            </a>
+                                        </h3>
+                                        <span class="product-card__price">@product.Price.ToString("N0") ₫</span>
+                                    </div>
+
+                                    <p class="product-card__description">
+                                        @(string.IsNullOrWhiteSpace(product.Description)
+                                            ? "Chưa có mô tả."
+                                            : product.Description)
+                                    </p>
+
+                                    <div class="product-card__footer">
+                                        <span class="stock-state @(product.StockQuantity > 0 ? "stock-state--available" : "stock-state--unavailable")">
+                                            @(product.StockQuantity > 0 ? "Còn món" : "Tạm hết món")
+                                        </span>
+
+                                        @if (product.StockQuantity <= 0)
+                                        {
+                                            <button type="button"
+                                                    class="customer-action customer-action--disabled"
+                                                    disabled="disabled">
+                                                Tạm hết món
+                                            </button>
+                                        }
+                                        else if (Request.IsAuthenticated)
+                                        {
+                                            using (Html.BeginForm(
+                                                "AddItem",
+                                                "Cart",
+                                                FormMethod.Post,
+                                                new { @class = "customer-add-form" }))
+                                            {
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="productId" value="@product.ProductId" />
+                                                <input type="hidden" name="quantity" value="1" />
+                                                <button type="submit" class="customer-action customer-action--primary">
+                                                    Thêm vào giỏ
+                                                </button>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            @Html.ActionLink(
+                                                "Đăng nhập để mua",
+                                                "Login",
+                                                "Account",
+                                                new { returnUrl = detailsUrl },
+                                                new { @class = "customer-action customer-action--secondary" })
+                                        }
+                                    </div>
+                                </div>
+                            </article>
+                        }
+                    </div>
+                }
+            </section>
         </div>
-    }
+    </div>
 </main>

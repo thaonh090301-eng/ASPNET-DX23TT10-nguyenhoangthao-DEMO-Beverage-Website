@@ -100,25 +100,30 @@ namespace BeverageWebsite.Controllers
             var inventoryByProductId = _inventoryBll
                 .GetAll()
                 .ToDictionary(inventory => inventory.ProductId);
-            var viewModels = products.Select(product =>
-            {
-                BeverageWebsite.Models.Inventory inventory;
-                var stockQuantity = inventoryByProductId.TryGetValue(
-                    product.ProductId,
-                    out inventory)
-                    ? inventory.StockQuantity
-                    : 0;
-
-                return new ProductCatalogItemViewModel
+            var viewModels = products
+                .Select(product =>
                 {
-                    ProductId = product.ProductId,
-                    ProductName = product.ProductName,
-                    Description = product.Description,
-                    Price = product.Price,
-                    ImageUrl = product.ImageUrl,
-                    StockQuantity = stockQuantity
-                };
-            }).ToList();
+                    BeverageWebsite.Models.Inventory inventory;
+                    var stockQuantity = inventoryByProductId.TryGetValue(
+                        product.ProductId,
+                        out inventory)
+                        ? inventory.StockQuantity
+                        : 0;
+
+                    return new ProductCatalogItemViewModel
+                    {
+                        ProductId = product.ProductId,
+                        ProductName = product.ProductName,
+                        Description = product.Description,
+                        Price = product.Price,
+                        ImageUrl = product.ImageUrl,
+                        IsFeatured = product.IsFeatured,
+                        BadgeType = product.BadgeType,
+                        StockQuantity = stockQuantity
+                    };
+                })
+                .OrderBy(product => GetBadgePriority(product.BadgeType))
+                .ToList();
 
             return View(viewModels);
         }
@@ -154,10 +159,27 @@ namespace BeverageWebsite.Controllers
                 Description = product.Description,
                 Price = product.Price,
                 ImageUrl = product.ImageUrl,
+                IsFeatured = product.IsFeatured,
+                BadgeType = product.BadgeType,
                 StockQuantity = inventory != null ? inventory.StockQuantity : 0
             };
 
             return View(viewModel);
+        }
+
+        private static int GetBadgePriority(string badgeType)
+        {
+            switch (badgeType)
+            {
+                case "BestSeller":
+                    return 1;
+                case "New":
+                    return 2;
+                case "Featured":
+                    return 3;
+                default:
+                    return 100;
+            }
         }
     }
 }

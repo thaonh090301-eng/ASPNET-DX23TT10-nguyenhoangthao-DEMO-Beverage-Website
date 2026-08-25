@@ -13,9 +13,15 @@
                 "CreateProduct",
                 "Admin",
                 FormMethod.Post,
-                new { @class = "form-horizontal", role = "form" }))
+                new
+                {
+                    @class = "form-horizontal product-form",
+                    role = "form",
+                    enctype = "multipart/form-data"
+                }))
             {
                 @Html.AntiForgeryToken()
+                @Html.HiddenFor(model => model.ImageUrl)
                 @Html.ValidationSummary(false, "", new { @class = "text-danger" })
 
                 <div class="form-group">
@@ -60,9 +66,7 @@
                         new
                         {
                             @class = "form-control",
-                            type = "number",
-                            min = "0",
-                            step = "1000"
+                            inputmode = "decimal"
                         })
                     @Html.ValidationMessageFor(
                         model => model.Price,
@@ -70,15 +74,59 @@
                         new { @class = "text-danger" })
                 </div>
 
-                <div class="form-group">
-                    <label class="control-label" for="ImageUrl">ImageUrl</label>
-                    @Html.TextBoxFor(
-                        model => model.ImageUrl,
-                        new { @class = "form-control" })
-                    @Html.ValidationMessageFor(
-                        model => model.ImageUrl,
-                        "",
-                        new { @class = "text-danger" })
+                <div class="form-group product-image-field">
+                    <label class="control-label" for="create-product-image-file">Ảnh sản phẩm</label>
+                    <div class="product-image-upload" data-product-image-upload>
+                        <div class="product-image-upload__preview"
+                             id="create-product-image-preview">
+                            <img class="product-image-upload__image"
+                                 id="create-product-image-preview-image"
+                                 alt="Xem trước ảnh sản phẩm"
+                                 hidden />
+                            <span class="product-image-upload__empty"
+                                  id="create-product-image-empty">
+                                Chưa chọn ảnh
+                            </span>
+                        </div>
+
+                        <div class="product-image-upload__controls">
+                            <div class="product-image-upload__actions">
+                                <input class="product-image-upload__input"
+                                       id="create-product-image-file"
+                                       type="file"
+                                       name="imageFile"
+                                       accept="image/jpeg,image/png,image/webp"
+                                       aria-controls="create-product-image-preview"
+                                       aria-describedby="create-product-image-status create-product-image-help" />
+                                <label class="product-image-upload__button"
+                                       for="create-product-image-file">
+                                    Chọn ảnh
+                                </label>
+                                <button class="product-image-upload__clear"
+                                        id="create-product-image-clear"
+                                        type="button"
+                                        hidden>
+                                    Bỏ chọn ảnh
+                                </button>
+                            </div>
+                            <p class="product-image-upload__status"
+                               id="create-product-image-status"
+                               aria-live="polite">
+                                Chưa chọn ảnh
+                            </p>
+                            <p class="help-block" id="create-product-image-help">
+                                Hỗ trợ JPG, PNG, WEBP. Dung lượng tối đa 5 MB.
+                            </p>
+                            @Html.ValidationMessage(
+                                "imageFile",
+                                "",
+                                new { @class = "text-danger" })
+                            @Html.ValidationMessageFor(
+                                model => model.ImageUrl,
+                                "",
+                                new { @class = "text-danger" })
+                        </div>
+                    </div>
                 </div>
 
                 <div class="form-group">
@@ -120,6 +168,31 @@
                     </label>
                 </div>
 
+                <div class="checkbox">
+                    <label>
+                        @Html.CheckBoxFor(model => model.IsFeatured)
+                        Hiển thị trong Món được yêu thích
+                    </label>
+                    <p class="help-block">
+                        Chọn mục này để món xuất hiện trong khu vực Món được yêu thích ở trang chủ.
+                    </p>
+                </div>
+
+                <div class="form-group">
+                    <label class="control-label" for="BadgeType">Nhãn sản phẩm</label>
+                    @Html.DropDownListFor(
+                        model => model.BadgeType,
+                        (SelectList)ViewBag.BadgeTypes,
+                        new { @class = "form-control" })
+                    @Html.ValidationMessageFor(
+                        model => model.BadgeType,
+                        "",
+                        new { @class = "text-danger" })
+                    <p class="help-block">
+                        Nhãn chỉ dùng để làm nổi bật sản phẩm và không thay đổi trạng thái bán.
+                    </p>
+                </div>
+
                 <button type="submit" class="btn btn-primary">Thêm sản phẩm</button>
                 @Html.ActionLink(
                     "Quay lại",
@@ -131,3 +204,92 @@
         </div>
     </div>
 </main>
+
+<script>
+    (function () {
+        "use strict";
+
+        var input = document.getElementById("create-product-image-file");
+        var previewImage = document.getElementById("create-product-image-preview-image");
+        var emptyState = document.getElementById("create-product-image-empty");
+        var status = document.getElementById("create-product-image-status");
+        var clearButton = document.getElementById("create-product-image-clear");
+        var objectUrlApi = window.URL || window.webkitURL;
+        var activeObjectUrl = null;
+        var previewVersion = 0;
+
+        if (!input || !previewImage || !emptyState || !status || !clearButton) {
+            return;
+        }
+
+        function revokeObjectUrl() {
+            if (activeObjectUrl && objectUrlApi && objectUrlApi.revokeObjectURL) {
+                objectUrlApi.revokeObjectURL(activeObjectUrl);
+            }
+
+            activeObjectUrl = null;
+        }
+
+        function showEmptyState() {
+            previewVersion += 1;
+            revokeObjectUrl();
+            previewImage.hidden = true;
+            previewImage.removeAttribute("src");
+            emptyState.hidden = false;
+            clearButton.hidden = true;
+            status.textContent = "Chưa chọn ảnh";
+        }
+
+        function showSelectedFile(file) {
+            previewVersion += 1;
+            var currentVersion = previewVersion;
+
+            revokeObjectUrl();
+            previewImage.alt = "Xem trước ảnh sản phẩm";
+            previewImage.hidden = false;
+            emptyState.hidden = true;
+            clearButton.hidden = false;
+            status.textContent = "Đã chọn: " + file.name;
+
+            if (objectUrlApi && objectUrlApi.createObjectURL) {
+                activeObjectUrl = objectUrlApi.createObjectURL(file);
+                previewImage.src = activeObjectUrl;
+                return;
+            }
+
+            if (window.FileReader) {
+                var reader = new FileReader();
+                reader.addEventListener("load", function () {
+                    if (currentVersion === previewVersion) {
+                        previewImage.src = reader.result;
+                    }
+                });
+                reader.readAsDataURL(file);
+            }
+        }
+
+        input.addEventListener("change", function () {
+            var file = input.files && input.files.length ? input.files[0] : null;
+            if (!file) {
+                showEmptyState();
+                return;
+            }
+
+            showSelectedFile(file);
+        });
+
+        clearButton.addEventListener("click", function () {
+            input.value = "";
+            showEmptyState();
+            input.focus();
+        });
+
+        if (input.form) {
+            input.form.addEventListener("reset", function () {
+                window.setTimeout(showEmptyState, 0);
+            });
+        }
+
+        window.addEventListener("beforeunload", revokeObjectUrl);
+    }());
+</script>

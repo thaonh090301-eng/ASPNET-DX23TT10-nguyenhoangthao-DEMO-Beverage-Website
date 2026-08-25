@@ -143,6 +143,80 @@ namespace BeverageWebsite.BLL
                 NormalizeOrderStatus(orderStatus));
         }
 
+        /// <summary>
+        /// Changes an order status when the requested business transition is valid.
+        /// </summary>
+        /// <param name="orderId">The order identifier.</param>
+        /// <param name="newStatus">The requested new order status.</param>
+        /// <returns>The number of records affected.</returns>
+        public int ChangeStatus(int orderId, string newStatus)
+        {
+            ValidateIdentifier(orderId, nameof(orderId));
+            var normalizedStatus = NormalizeOrderStatus(newStatus);
+
+            Order order;
+
+            try
+            {
+                order = _orderDal.GetById(orderId);
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException(
+                    "The order status could not be changed.",
+                    ex);
+            }
+
+            if (order == null)
+            {
+                throw new InvalidOperationException("The order was not found.");
+            }
+
+            if (!IsAllowedStatusTransition(order.OrderStatus, normalizedStatus))
+            {
+                throw new InvalidOperationException(
+                    "The requested order status transition is invalid.");
+            }
+
+            try
+            {
+                return _orderDal.ChangeStatus(
+                    orderId,
+                    order.OrderStatus,
+                    normalizedStatus);
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException(
+                    "The order status could not be changed.",
+                    ex);
+            }
+        }
+
+        private static bool IsAllowedStatusTransition(
+            string currentStatus,
+            string newStatus)
+        {
+            if (string.Equals(currentStatus, "Pending", StringComparison.Ordinal))
+            {
+                return string.Equals(newStatus, "Confirmed", StringComparison.Ordinal)
+                    || string.Equals(newStatus, "Cancelled", StringComparison.Ordinal);
+            }
+
+            if (string.Equals(currentStatus, "Confirmed", StringComparison.Ordinal))
+            {
+                return string.Equals(newStatus, "Processing", StringComparison.Ordinal)
+                    || string.Equals(newStatus, "Cancelled", StringComparison.Ordinal);
+            }
+
+            if (string.Equals(currentStatus, "Processing", StringComparison.Ordinal))
+            {
+                return string.Equals(newStatus, "Completed", StringComparison.Ordinal);
+            }
+
+            return false;
+        }
+
         private static void ValidateIdentifier(int value, string parameterName)
         {
             if (value <= 0)

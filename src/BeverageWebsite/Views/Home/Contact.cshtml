@@ -1,0 +1,92 @@
+@{
+    ViewBag.Title = "Liên hệ với chúng tôi";
+}
+
+<main class="content-page contact-page">
+    <header class="content-page-hero content-page-hero--contact">
+        <div class="content-page-shell">
+            <p class="section-eyebrow">Cùng trò chuyện</p>
+            <h1>Liên hệ với chúng tôi</h1>
+            <p>
+                Little Cloud luôn sẵn sàng chào đón và đồng hành cùng bạn. Hãy liên hệ với
+                chúng tôi qua các thông tin dưới đây khi bạn cần hỗ trợ hoặc muốn biết thêm
+                về cửa hàng.
+            </p>
+        </div>
+    </header>
+
+    <section class="content-page-shell contact-section" aria-labelledby="contact-information-title">
+        <div class="section-heading section-heading--centered">
+            <div>
+                <p class="section-eyebrow">Thông tin cửa hàng</p>
+                <h2 id="contact-information-title">Hẹn gặp bạn tại Little Cloud</h2>
+            </div>
+        </div>
+
+        <div class="contact-grid">
+            <article class="contact-card">
+                <span class="contact-card__icon" aria-hidden="true">
+                    <svg viewBox="0 0 40 40" focusable="false">
+                        <path d="M20 35s11-10.1 11-20a11 11 0 1 0-22 0c0 9.9 11 20 11 20Z" fill="none" stroke="currentColor" stroke-width="2"></path>
+                        <circle cx="20" cy="15" r="4" fill="none" stroke="currentColor" stroke-width="2"></circle>
+                    </svg>
+                </span>
+                <h3>Địa chỉ cửa hàng</h3>
+                <p>DX23TT10 - 170123374 - Nguyễn Hoàng Thảo</p>
+            </article>
+            <article class="contact-card">
+                <span class="contact-card__icon" aria-hidden="true">
+                    <svg viewBox="0 0 40 40" focusable="false">
+                        <path d="M11 7h6l3 8-4 3c2.2 4.4 5.6 7.8 10 10l3-4 8 3v6c0 2.2-1.8 4-4 4C16.4 37 3 23.6 3 7c0-2.2 1.8-4 4-4h4v4Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"></path>
+                    </svg>
+                </span>
+                <h3>Số điện thoại</h3>
+                <p><span>0343 431 374</span></p>
+            </article>
+            <article class="contact-card">
+                <span class="contact-card__icon" aria-hidden="true">
+                    <svg viewBox="0 0 40 40" focusable="false">
+                        <rect x="4" y="8" width="32" height="24" rx="3" fill="none" stroke="currentColor" stroke-width="2"></rect>
+                        <path d="m6 11 14 11 14-11" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"></path>
+                    </svg>
+                </span>
+                <h3>Email</h3>
+                <p><span>thaonh090301@sv-onuni.edu.vn</span></p>
+            </article>
+            <article class="contact-card">
+                <span class="contact-card__icon" aria-hidden="true">
+                    <svg viewBox="0 0 40 40" focusable="false">
+                        <circle cx="20" cy="20" r="16" fill="none" stroke="currentColor" stroke-width="2"></circle>
+                        <path d="M20 11v10l7 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                    </svg>
+                </span>
+                <h3>Giờ mở cửa</h3>
+                <p>06:00 - 22:00</p>
+            </article>
+        </div>
+    </section>
+
+    <section class="contact-navigation" aria-labelledby="contact-navigation-title">
+        <div class="content-page-shell contact-navigation__inner">
+            <div>
+                <p class="section-eyebrow">Tiếp tục khám phá</p>
+                <h2 id="contact-navigation-title">Tìm món uống dành cho bạn</h2>
+                <p>Bạn có thể xem menu hiện tại hoặc quay về trang chủ để khám phá thêm.</p>
+            </div>
+            <div class="home-actions">
+                @Html.ActionLink(
+                    "Xem menu",
+                    "Index",
+                    "Product",
+                    null,
+                    new { @class = "home-button home-button--primary" })
+                @Html.ActionLink(
+                    "Về trang chủ",
+                    "Index",
+                    "Home",
+                    null,
+                    new { @class = "home-button home-button--secondary" })
+            </div>
+        </div>
+    </section>
+</main>

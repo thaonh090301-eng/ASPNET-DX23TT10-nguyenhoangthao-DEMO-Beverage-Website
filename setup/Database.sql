@@ -104,10 +104,17 @@ BEGIN
         Price DECIMAL(12,2) NOT NULL,
         ImageUrl NVARCHAR(500) NULL,
         IsActive BIT NOT NULL CONSTRAINT DF_Product_IsActive DEFAULT 1,
+        IsFeatured BIT NOT NULL CONSTRAINT DF_Product_IsFeatured DEFAULT 0,
+        BadgeType NVARCHAR(20) NULL,
         CreatedAt DATETIME2(7) NOT NULL CONSTRAINT DF_Product_CreatedAt DEFAULT SYSUTCDATETIME(),
         CONSTRAINT PK_Product PRIMARY KEY CLUSTERED (ProductId ASC),
         CONSTRAINT FK_Product_Category FOREIGN KEY (CategoryId) REFERENCES dbo.Category(CategoryId) ON DELETE NO ACTION ON UPDATE NO ACTION,
-        CONSTRAINT CK_Product_Price CHECK (Price >= 0)
+        CONSTRAINT CK_Product_Price CHECK (Price >= 0),
+        CONSTRAINT CK_Product_BadgeType CHECK
+        (
+            BadgeType IS NULL
+            OR BadgeType IN (N'Featured', N'BestSeller', N'New')
+        )
     );
 
     EXEC sys.sp_addextendedproperty

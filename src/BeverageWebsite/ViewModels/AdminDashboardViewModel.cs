@@ -24,5 +24,10 @@ namespace BeverageWebsite.ViewModels
         /// Gets or sets the number of active products without available stock.
         /// </summary>
         public int OutOfStockProductCount { get; set; }
+
+        /// <summary>
+        /// Gets or sets the number of orders awaiting confirmation.
+        /// </summary>
+        public int PendingOrderCount { get; set; }
     }
 }

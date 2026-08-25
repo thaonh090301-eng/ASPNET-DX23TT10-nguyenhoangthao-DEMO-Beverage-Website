@@ -1,49 +1,379 @@
-@{
-    ViewBag.Title = "Trang chủ";
+@using System.Linq
+@model BeverageWebsite.ViewModels.HomePageViewModel
+
+@helper RenderProductBadge(string badgeType)
+{
+    if (string.Equals(badgeType, "Featured", System.StringComparison.Ordinal))
+    {
+        <span class="product-badge product-badge--featured">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M12 3.2l2.72 5.51 6.08.88-4.4 4.29 1.04 6.05L12 17.07l-5.44 2.86 1.04-6.05-4.4-4.29 6.08-.88L12 3.2Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>
+            <span>Món nổi bật</span>
+        </span>
+    }
+    else if (string.Equals(badgeType, "BestSeller", System.StringComparison.Ordinal))
+    {
+        <span class="product-badge product-badge--bestseller">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M13.5 2.75c.65 3.8-2.35 5.13-2.35 8.05 0 1.25.68 2.08 1.73 2.7-.13-2.05 1.2-3.26 2.65-4.37 1.22 2.07 3.47 3.72 3.47 6.7 0 3.43-2.7 6.2-6.03 6.2S5.5 19.76 5.5 16.33c0-4.16 2.68-7.02 8-13.58Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>
+            <span>Best seller</span>
+        </span>
+    }
+    else if (string.Equals(badgeType, "New", System.StringComparison.Ordinal))
+    {
+        <span class="product-badge product-badge--new">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M11.5 3.25c.65 4.49 3.26 7.1 7.75 7.75-4.49.65-7.1 3.26-7.75 7.75C10.85 14.26 8.24 11.65 3.75 11c4.49-.65 7.1-3.26 7.75-7.75ZM19 3v4m2-2h-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>
+            <span>Món mới</span>
+        </span>
+    }
 }
 
-<main>
-    <section class="jumbotron">
-        <h1>Chào mừng đến với Beverage Website</h1>
-        <p class="lead">
-            Khám phá các danh mục đồ uống và thông tin sản phẩm trong danh mục
-            công khai của chúng tôi.
-        </p>
-        <p>
-            Mỗi sản phẩm có thể kèm theo hình ảnh minh họa khi thông tin ảnh
-            được cung cấp.
-        </p>
-        <p>
-            @Html.ActionLink(
-                "Khám phá danh mục",
-                "Index",
-                "Category",
-                null,
-                new { @class = "btn btn-primary" })
-            @Html.ActionLink(
-                "Xem sản phẩm",
-                "Index",
-                "Product",
-                null,
-                new { @class = "btn btn-default" })
-        </p>
+@{
+    ViewBag.Title = "Trang chủ";
+
+    var categories = Model == null || Model.Categories == null
+        ? Enumerable.Empty<BeverageWebsite.Models.Category>()
+        : Model.Categories;
+    var featuredProducts = Model == null || Model.FeaturedProducts == null
+        ? Enumerable.Empty<BeverageWebsite.ViewModels.ProductCatalogItemViewModel>()
+        : Model.FeaturedProducts;
+}
+
+<main class="home-page">
+    <section class="home-hero" aria-labelledby="home-hero-title">
+        <span class="home-hero__shape home-hero__shape--one" aria-hidden="true"></span>
+        <span class="home-hero__shape home-hero__shape--two" aria-hidden="true"></span>
+
+        <div class="home-section-shell home-hero__grid">
+            <div class="home-hero__content">
+                <p class="section-eyebrow">Hương vị dịu dàng mỗi ngày</p>
+                <h1 id="home-hero-title">Một khoảng nghỉ ngọt ngào trong từng ly</h1>
+                <p class="home-hero__summary">
+                    Khám phá cà phê, cacao, matcha và những dòng trà được chuẩn bị
+                    cẩn thận cho từng khoảnh khắc của bạn.
+                </p>
+                <div class="home-actions">
+                    @Html.ActionLink(
+                        "Xem menu",
+                        "Index",
+                        "Product",
+                        null,
+                        new { @class = "home-button home-button--primary" })
+                    @Html.ActionLink(
+                        "Khám phá danh mục",
+                        "Index",
+                        "Category",
+                        null,
+                        new { @class = "home-button home-button--secondary" })
+                </div>
+            </div>
+
+            <div class="home-hero__presentation">
+                <figure class="home-hero__visual">
+                    <span class="home-hero__image-backdrop" aria-hidden="true"></span>
+                    <img src="@Url.Content("~/Content/Images/home-hero.png")"
+                         alt=""
+                         class="home-hero__image"
+                         onerror="this.hidden = true;" />
+                </figure>
+            </div>
+        </div>
     </section>
 
-    <section>
-        <h2>Tính năng danh mục công khai</h2>
-        <div class="row">
-            <div class="col-md-6">
-                <ul>
-                    <li>Xem danh mục đồ uống</li>
-                    <li>Xem danh sách và chi tiết sản phẩm</li>
-                    <li>Tìm kiếm sản phẩm theo tên hoặc mô tả</li>
-                </ul>
+    <section class="value-highlights" aria-label="Điểm nổi bật của cửa hàng">
+        <div class="home-section-shell value-highlights__grid">
+            <div class="value-highlight">
+                <span class="value-highlight__icon" aria-hidden="true">
+                    <svg viewBox="0 0 32 32" focusable="false">
+                        <path d="M25.5 6.5C17 6.8 10.8 11.4 9.7 19.4c4.4.1 8.1-1.3 10.8-4.2-2.8 3.8-6.8 6.6-12 8.4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                    </svg>
+                </span>
+                <span>Nguyên liệu chọn lọc</span>
             </div>
-            <div class="col-md-6">
-                <ul>
-                    <li>Lọc sản phẩm theo danh mục</li>
-                    <li>Xem hình ảnh minh họa khi sản phẩm có ImageUrl</li>
-                </ul>
+            <div class="value-highlight">
+                <span class="value-highlight__icon" aria-hidden="true">
+                    <svg viewBox="0 0 32 32" focusable="false">
+                        <path d="M7 12h16v9a6 6 0 0 1-6 6h-4a6 6 0 0 1-6-6v-9Zm16 2h2a4 4 0 0 1 0 8h-2M11 8c0-2 2-2 2-4m5 4c0-2 2-2 2-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                    </svg>
+                </span>
+                <span>Pha chế cẩn thận</span>
+            </div>
+            <div class="value-highlight">
+                <span class="value-highlight__icon" aria-hidden="true">
+                    <svg viewBox="0 0 32 32" focusable="false">
+                        <path d="M6 9h3l2.2 12h12.2l2.1-8.5H10M13 26a1.5 1.5 0 1 0 0 .1m9-.1a1.5 1.5 0 1 0 0 .1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                    </svg>
+                </span>
+                <span>Đặt món thuận tiện</span>
+            </div>
+            <div class="value-highlight">
+                <span class="value-highlight__icon" aria-hidden="true">
+                    <svg viewBox="0 0 32 32" focusable="false">
+                        <circle cx="16" cy="16" r="5" fill="none" stroke="currentColor" stroke-width="2"></circle>
+                        <path d="M16 3v4m0 18v4M3 16h4m18 0h4M6.8 6.8l2.8 2.8m12.8 12.8 2.8 2.8m0-18.4-2.8 2.8M9.6 22.4l-2.8 2.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+                    </svg>
+                </span>
+                <span>Hương vị mỗi ngày</span>
+            </div>
+        </div>
+    </section>
+
+    <section class="home-section category-section" aria-labelledby="category-section-title">
+        <div class="home-section-shell">
+            <div class="section-heading">
+                <div>
+                    <p class="section-eyebrow">Chọn theo sở thích</p>
+                    <h2 id="category-section-title">Khám phá theo danh mục</h2>
+                </div>
+                @Html.ActionLink(
+                    "Xem tất cả danh mục",
+                    "Index",
+                    "Category",
+                    null,
+                    new { @class = "section-link" })
+            </div>
+
+            @if (!categories.Any())
+            {
+                <div class="home-empty-state">
+                    <p>Các danh mục đồ uống đang được cập nhật. Mời bạn quay lại sau nhé.</p>
+                </div>
+            }
+            else
+            {
+                <div class="category-grid">
+                    @foreach (var category in categories)
+                    {
+                        <a class="category-card"
+                           href="@Url.Action("Index", "Product", new { categoryId = category.CategoryId })">
+                            <span class="category-card__decoration" aria-hidden="true">
+                                <svg viewBox="0 0 72 72" focusable="false">
+                                    <path d="M15 25h35v21a12 12 0 0 1-12 12H27a12 12 0 0 1-12-12V25Z" fill="none" stroke="currentColor" stroke-width="3"></path>
+                                    <path d="M50 31h5a8 8 0 0 1 0 16h-5M24 18c0-4 4-4 4-8m10 8c0-4 4-4 4-8" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"></path>
+                                </svg>
+                            </span>
+                            <span class="category-card__content">
+                                <span class="category-card__name">@category.CategoryName</span>
+                                <span class="category-card__description">
+                                    @(string.IsNullOrWhiteSpace(category.Description)
+                                        ? "Chưa có mô tả."
+                                        : category.Description)
+                                </span>
+                            </span>
+                            <span class="category-card__arrow" aria-hidden="true">&rarr;</span>
+                        </a>
+                    }
+                </div>
+            }
+        </div>
+    </section>
+
+    <section class="home-section featured-products" aria-labelledby="featured-products-title">
+        <div class="home-section-shell">
+            <div class="section-heading">
+                <div>
+                    <p class="section-eyebrow">Một chút ngon lành</p>
+                    <h2 id="featured-products-title">Món được yêu thích</h2>
+                </div>
+                @Html.ActionLink(
+                    "Xem toàn bộ menu",
+                    "Index",
+                    "Product",
+                    null,
+                    new { @class = "section-link" })
+            </div>
+
+            @if (!featuredProducts.Any())
+            {
+                <div class="home-empty-state">
+                    <p>Các món nổi bật đang được cập nhật. Mời bạn quay lại sau nhé.</p>
+                </div>
+            }
+            else
+            {
+                <div class="product-grid">
+                    @foreach (var product in featuredProducts)
+                    {
+                        var productDetailsUrl = Url.Action(
+                            "Details",
+                            "Product",
+                            new { id = product.ProductId });
+
+                        <article class="product-card">
+                            <a class="product-card__media product-media"
+                               href="@productDetailsUrl"
+                               aria-label="Mở trang sản phẩm @product.ProductName">
+                                @RenderProductBadge(product.BadgeType)
+                                @if (string.IsNullOrWhiteSpace(product.ImageUrl))
+                                {
+                                    <span class="product-card__placeholder" aria-hidden="true">
+                                        <svg viewBox="0 0 96 96" focusable="false">
+                                            <path d="M20 32h48v28a17 17 0 0 1-17 17H37a17 17 0 0 1-17-17V32Z" fill="none" stroke="currentColor" stroke-width="4"></path>
+                                            <path d="M68 40h7a11 11 0 0 1 0 22h-7M32 23c0-5 5-5 5-10m14 10c0-5 5-5 5-10" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"></path>
+                                        </svg>
+                                        <span>Hình ảnh đang cập nhật</span>
+                                    </span>
+                                }
+                                else
+                                {
+                                    <img src="@Url.Content(product.ImageUrl)"
+                                         alt="@product.ProductName"
+                                         class="product-card__image"
+                                         loading="lazy" />
+                                }
+                            </a>
+                            <div class="product-card__body">
+                                <div class="product-card__heading">
+                                    <h3>
+                                        <a class="product-card__name"
+                                           href="@productDetailsUrl">@product.ProductName</a>
+                                    </h3>
+                                    <span class="product-card__price">@product.Price.ToString("N0") ₫</span>
+                                </div>
+                                <p class="product-card__description">
+                                    @(string.IsNullOrWhiteSpace(product.Description)
+                                        ? "Chưa có mô tả."
+                                        : product.Description)
+                                </p>
+                                <div class="product-card__footer">
+                                    <span class="stock-state @(product.StockQuantity > 0 ? "stock-state--available" : "stock-state--unavailable")">
+                                        @(product.StockQuantity > 0 ? "Còn món" : "Tạm hết món")
+                                    </span>
+                                    @if (product.StockQuantity <= 0)
+                                    {
+                                        <button type="button"
+                                                class="customer-action customer-action--disabled"
+                                                disabled="disabled">
+                                            Tạm hết món
+                                        </button>
+                                    }
+                                    else if (!Request.IsAuthenticated)
+                                    {
+                                        <a class="customer-action customer-action--secondary"
+                                           href="@Url.Action("Login", "Account", new { returnUrl = productDetailsUrl })">
+                                            Đăng nhập để mua
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        using (Html.BeginForm(
+                                            "AddItem",
+                                            "Cart",
+                                            FormMethod.Post,
+                                            new { @class = "customer-add-form" }))
+                                        {
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="productId" value="@product.ProductId" />
+                                            <input type="hidden" name="quantity" value="1" />
+                                            <button type="submit"
+                                                    class="customer-action customer-action--primary">
+                                                Thêm vào giỏ
+                                            </button>
+                                        }
+                                    }
+                                </div>
+                            </div>
+                        </article>
+                    }
+                </div>
+            }
+        </div>
+    </section>
+
+    <section class="home-section shop-story" aria-labelledby="shop-story-title">
+        <div class="home-section-shell shop-story__grid">
+            <div class="shop-story__art" aria-hidden="true">
+                <span class="shop-story__circle"></span>
+                <svg viewBox="0 0 260 260" focusable="false">
+                    <path d="M55 92h126v73a43 43 0 0 1-43 43h-40a43 43 0 0 1-43-43V92Z" fill="currentColor"></path>
+                    <path d="M181 111h15a32 32 0 0 1 0 64h-15" fill="none" stroke="currentColor" stroke-width="18" stroke-linecap="round"></path>
+                    <path d="M90 69c0-15 14-15 14-30m37 30c0-15 14-15 14-30" fill="none" stroke="currentColor" stroke-width="9" stroke-linecap="round"></path>
+                </svg>
+            </div>
+            <div class="shop-story__content">
+                <p class="section-eyebrow">Câu chuyện của chúng tôi</p>
+                <h2 id="shop-story-title">Một góc nhỏ cho những phút chậm lại</h2>
+                <p>
+                    Little Cloud bắt đầu từ mong muốn tạo nên một nơi mà mỗi món uống đều mang
+                    lại cảm giác gần gũi. Từ cách chọn nguyên liệu đến lúc hoàn thiện từng ly,
+                    chúng tôi trân trọng những điều giản dị làm nên một khoảng nghỉ thật dễ chịu.
+                </p>
+                <p>
+                    Dù bạn ghé qua để khởi đầu buổi sáng hay tìm một chút thư thái giữa ngày,
+                    menu luôn được chuẩn bị để đồng hành cùng nhịp sống của bạn.
+                </p>
+                @Html.ActionLink(
+                    "Đọc thêm tại góc nhỏ",
+                    "Blog",
+                    "Home",
+                    null,
+                    new { @class = "section-link" })
+            </div>
+        </div>
+    </section>
+
+    <section class="home-section blog-previews" aria-labelledby="blog-previews-title">
+        <div class="home-section-shell">
+            <div class="section-heading">
+                <div>
+                    <p class="section-eyebrow">Chuyện bên ly nước</p>
+                    <h2 id="blog-previews-title">Góc nhỏ của Little Cloud</h2>
+                </div>
+                @Html.ActionLink(
+                    "Xem tất cả bài viết",
+                    "Blog",
+                    "Home",
+                    null,
+                    new { @class = "section-link" })
+            </div>
+
+            <div class="blog-grid">
+                <article class="blog-preview-card blog-preview-card--sage">
+                    <span class="blog-preview-card__number" aria-hidden="true">01</span>
+                    <h3>Cách chọn món uống phù hợp cho một ngày bận rộn</h3>
+                    <p>Một vài gợi ý nhẹ nhàng để lựa chọn hương vị phù hợp với từng nhịp trong ngày.</p>
+                    @Html.ActionLink("Đọc câu chuyện", "Blog", "Home", null, new { @class = "blog-preview-card__link" })
+                </article>
+                <article class="blog-preview-card blog-preview-card--pink">
+                    <span class="blog-preview-card__number" aria-hidden="true">02</span>
+                    <h3>Matcha, cacao và những khoảng nghỉ dịu dàng</h3>
+                    <p>Những sắc vị thân quen có thể giúp một khoảng dừng ngắn trở nên trọn vẹn hơn.</p>
+                    @Html.ActionLink("Đọc câu chuyện", "Blog", "Home", null, new { @class = "blog-preview-card__link" })
+                </article>
+                <article class="blog-preview-card blog-preview-card--terracotta">
+                    <span class="blog-preview-card__number" aria-hidden="true">03</span>
+                    <h3>Bí quyết thưởng thức đồ uống trọn vị hơn</h3>
+                    <p>Chậm lại một chút để cảm nhận nhiệt độ, hương thơm và hậu vị trong mỗi món uống.</p>
+                    @Html.ActionLink("Đọc câu chuyện", "Blog", "Home", null, new { @class = "blog-preview-card__link" })
+                </article>
+            </div>
+        </div>
+    </section>
+
+    <section class="home-contact-cta" aria-labelledby="home-contact-title">
+        <div class="home-section-shell home-contact-cta__inner">
+            <div>
+                <p class="section-eyebrow">Hẹn bạn tại Little Cloud</p>
+                <h2 id="home-contact-title">Bạn muốn biết thêm về cửa hàng?</h2>
+                <p>Ghé trang liên hệ để xem những thông tin mới nhất từ chúng tôi.</p>
+            </div>
+            <div class="home-actions">
+                @Html.ActionLink(
+                    "Liên hệ với chúng tôi",
+                    "Contact",
+                    "Home",
+                    null,
+                    new { @class = "home-button home-button--primary" })
+                @Html.ActionLink(
+                    "Quay lại menu",
+                    "Index",
+                    "Product",
+                    null,
+                    new { @class = "home-button home-button--secondary" })
             </div>
         </div>
     </section>

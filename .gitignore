@@ -427,3 +427,7 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+# Product images uploaded at runtime
+src/BeverageWebsite/Content/Uploads/Products/*
+!src/BeverageWebsite/Content/Uploads/Products/.gitkeep

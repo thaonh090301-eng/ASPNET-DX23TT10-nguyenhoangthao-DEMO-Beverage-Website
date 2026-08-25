@@ -14,6 +14,7 @@ namespace BeverageWebsite.BLL
         private const int DescriptionMaxLength = 1000;
         private const int ImageUrlMaxLength = 500;
         private const int SearchKeywordMaxLength = DescriptionMaxLength;
+        private const int MaximumFeaturedProductCount = 8;
 
         private readonly ProductDAL _productDal;
 
@@ -41,6 +42,23 @@ namespace BeverageWebsite.BLL
         public List<Product> GetActive()
         {
             return _productDal.GetActive();
+        }
+
+        /// <summary>
+        /// Retrieves a limited number of featured products that are publicly available.
+        /// </summary>
+        /// <param name="maximumCount">The maximum number of products to return, from one to eight.</param>
+        /// <returns>The featured active products returned by the data access layer.</returns>
+        public List<Product> GetFeaturedActive(int maximumCount)
+        {
+            if (maximumCount <= 0 || maximumCount > MaximumFeaturedProductCount)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(maximumCount),
+                    $"The maximum count must be between 1 and {MaximumFeaturedProductCount}.");
+            }
+
+            return _productDal.GetFeaturedActive(maximumCount);
         }
 
         /// <summary>
@@ -135,7 +153,9 @@ namespace BeverageWebsite.BLL
                     product.ImageUrl,
                     ImageUrlMaxLength,
                     nameof(product.ImageUrl)),
-                IsActive = product.IsActive
+                IsActive = product.IsActive,
+                IsFeatured = product.IsFeatured,
+                BadgeType = NormalizeBadgeType(product.BadgeType)
             };
 
             return _productDal.Insert(normalizedProduct);
@@ -188,7 +208,9 @@ namespace BeverageWebsite.BLL
                     product.ImageUrl,
                     ImageUrlMaxLength,
                     nameof(product.ImageUrl)),
-                IsActive = product.IsActive
+                IsActive = product.IsActive,
+                IsFeatured = product.IsFeatured,
+                BadgeType = NormalizeBadgeType(product.BadgeType)
             };
 
             return _productDal.InsertWithInventory(
@@ -227,7 +249,9 @@ namespace BeverageWebsite.BLL
                     product.ImageUrl,
                     ImageUrlMaxLength,
                     nameof(product.ImageUrl)),
-                IsActive = product.IsActive
+                IsActive = product.IsActive,
+                IsFeatured = product.IsFeatured,
+                BadgeType = NormalizeBadgeType(product.BadgeType)
             };
 
             return _productDal.Update(normalizedProduct);
@@ -313,6 +337,36 @@ namespace BeverageWebsite.BLL
                 throw new ArgumentOutOfRangeException(
                     nameof(price),
                     "Product price must be greater than or equal to zero.");
+            }
+        }
+
+        private static string NormalizeBadgeType(string badgeType)
+        {
+            if (string.IsNullOrWhiteSpace(badgeType))
+            {
+                return null;
+            }
+
+            var normalizedBadgeType = badgeType.Trim();
+
+            if (string.Equals(
+                normalizedBadgeType,
+                "None",
+                StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+
+            switch (normalizedBadgeType)
+            {
+                case "Featured":
+                case "BestSeller":
+                case "New":
+                    return normalizedBadgeType;
+                default:
+                    throw new ArgumentException(
+                        "Nhãn sản phẩm không hợp lệ. Hãy chọn Không có nhãn, Món nổi bật, Best seller hoặc Món mới.",
+                        nameof(badgeType));
             }
         }
 
