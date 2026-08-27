@@ -130,6 +130,45 @@ namespace BeverageWebsite.DAL
         }
 
         /// <summary>
+        /// Retrieves an address only when it belongs to the specified user.
+        /// </summary>
+        /// <param name="userId">The identifier of the address owner.</param>
+        /// <param name="addressId">The identifier of the address.</param>
+        /// <returns>The matching owned address when found; otherwise, null.</returns>
+        public Address GetByUserIdAndAddressId(int userId, int addressId)
+        {
+            ValidateIdentifier(userId, nameof(userId));
+            ValidateIdentifier(addressId, nameof(addressId));
+
+            const string sql = @"SELECT AddressId, UserId, RecipientName, Phone, Street, Ward, District, City, IsDefault
+                                 FROM dbo.Address
+                                 WHERE AddressId = @AddressId
+                                   AND UserId = @UserId";
+            var parameters = new[]
+            {
+                new SqlParameter("@AddressId", SqlDbType.Int) { Value = addressId },
+                new SqlParameter("@UserId", SqlDbType.Int) { Value = userId }
+            };
+
+            try
+            {
+                using (var reader = _dataProvider.ExecuteReader(sql, CommandType.Text, parameters))
+                {
+                    if (reader.Read())
+                    {
+                        return MapAddress(reader);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException("Failed to retrieve the address for the user.", ex);
+            }
+
+            return null;
+        }
+
+        /// <summary>
         /// Inserts a new address into the database.
         /// </summary>
         /// <param name="address">The address to insert.</param>

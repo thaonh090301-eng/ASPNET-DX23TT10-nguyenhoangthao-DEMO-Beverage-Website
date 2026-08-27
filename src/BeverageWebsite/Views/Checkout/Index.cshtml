@@ -83,15 +83,24 @@
 
         <h2>Địa chỉ giao hàng</h2>
 
+        <p>
+            @Html.ActionLink(
+                "Quản lý trong Hồ sơ của tôi",
+                "Profile",
+                "Account",
+                null,
+                new { @class = "btn btn-default" })
+        </p>
+
         if (Model.Addresses == null || Model.Addresses.Count == 0)
         {
             <p>Bạn chưa có địa chỉ giao hàng.</p>
             <p>
                 @Html.ActionLink(
                     "Thêm địa chỉ giao hàng",
-                    "Create",
-                    "Address",
-                    null,
+                    "Profile",
+                    "Account",
+                    new { addAddress = true },
                     new { @class = "btn btn-primary" })
 
                 @Html.ActionLink(
@@ -142,6 +151,12 @@
                             <span>, @address.City</span>
                         </label>
                     </div>
+                    @Html.ActionLink(
+                        "Sửa",
+                        "Profile",
+                        "Account",
+                        new { addressId = address.AddressId },
+                        new { @class = "btn btn-default btn-sm" })
                 }
 
                 @Html.ValidationMessageFor(

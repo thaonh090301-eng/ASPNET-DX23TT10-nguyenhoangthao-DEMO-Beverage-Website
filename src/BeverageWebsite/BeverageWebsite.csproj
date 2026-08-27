@@ -121,6 +121,7 @@
     <Compile Include="ViewModels\OrderHistoryViewModel.cs" />
     <Compile Include="ViewModels\ProductCatalogItemViewModel.cs" />
     <Compile Include="ViewModels\ProductDetailsViewModel.cs" />
+    <Compile Include="ViewModels\ProfileViewModel.cs" />
     <Compile Include="ViewModels\RegisterViewModel.cs" />
     <Compile Include="Models\Address.cs" />
     <Compile Include="Models\Cart.cs" />
@@ -165,6 +166,8 @@
     <Content Include="Views\Admin\CreateCategory.cshtml" />
     <Content Include="Views\Admin\EditCategory.cshtml" />
     <Content Include="Views\Address\Create.cshtml" />
+    <Content Include="Views\Address\Edit.cshtml" />
+    <Content Include="Views\Address\Index.cshtml" />
     <Content Include="Views\Account\Login.cshtml" />
     <Content Include="Views\Account\Profile.cshtml" />
     <Content Include="Views\Account\Register.cshtml" />

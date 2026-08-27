@@ -59,6 +59,19 @@ namespace BeverageWebsite.BLL
         }
 
         /// <summary>
+        /// Retrieves an address only when it belongs to the specified user.
+        /// </summary>
+        /// <param name="userId">The identifier of the address owner.</param>
+        /// <param name="addressId">The identifier of the address.</param>
+        /// <returns>The matching owned address when found; otherwise, null.</returns>
+        public Address GetByUserIdAndAddressId(int userId, int addressId)
+        {
+            ValidateIdentifier(userId, nameof(userId));
+            ValidateIdentifier(addressId, nameof(addressId));
+            return _addressDal.GetByUserIdAndAddressId(userId, addressId);
+        }
+
+        /// <summary>
         /// Validates, normalizes, and creates an address.
         /// </summary>
         /// <param name="address">The address data to create.</param>

@@ -1,128 +1,64 @@
-using System;
 using System.Web.Mvc;
-using System.Web.Security;
-using BeverageWebsite.BLL;
-using BeverageWebsite.Models;
-using BeverageWebsite.ViewModels;
 
 namespace BeverageWebsite.Controllers
 {
     /// <summary>
-    /// Provides authenticated shipping-address creation.
+    /// Redirects legacy address URLs to the shipping-address section in the customer profile.
     /// </summary>
     public class AddressController : Controller
     {
-        private readonly UserBLL _userBll;
-        private readonly AddressBLL _addressBll;
-
         /// <summary>
-        /// Initializes the controller for authenticated address operations.
+        /// Redirects the former address list URL to the profile page.
         /// </summary>
-        public AddressController()
+        [Authorize]
+        [HttpGet]
+        public ActionResult Index()
         {
-            _userBll = new UserBLL();
-            _addressBll = new AddressBLL();
+            return RedirectToAction("Profile", "Account");
         }
 
         /// <summary>
-        /// Displays the shipping-address creation form.
+        /// Redirects the former address creation URL to the profile editor.
         /// </summary>
-        /// <returns>The creation view or the login page for a stale identity.</returns>
         [Authorize]
         [HttpGet]
         public ActionResult Create()
         {
-            var authenticatedEmail = User.Identity.Name;
-
-            if (string.IsNullOrWhiteSpace(authenticatedEmail))
-            {
-                FormsAuthentication.SignOut();
-                return RedirectToAction("Login", "Account");
-            }
-
-            var user = _userBll.GetByEmail(authenticatedEmail);
-
-            if (user == null || !user.IsActive)
-            {
-                FormsAuthentication.SignOut();
-                return RedirectToAction("Login", "Account");
-            }
-
-            return View(new AddressInputViewModel());
+            return RedirectToAction("Profile", "Account", new { addAddress = true });
         }
 
         /// <summary>
-        /// Processes the authenticated shipping-address creation form.
+        /// Redirects the former address edit URL to the profile editor.
         /// </summary>
-        /// <param name="input">The submitted shipping-address input.</param>
-        /// <returns>The creation view on failure or checkout after success.</returns>
+        [Authorize]
+        [HttpGet]
+        public ActionResult Edit(int? id)
+        {
+            return RedirectToAction("Profile", "Account", new { addressId = id });
+        }
+
+        /// <summary>
+        /// Redirects legacy create form posts to the profile page.
+        /// </summary>
         [Authorize]
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Create(AddressInputViewModel input)
+        [ActionName("Create")]
+        public ActionResult CreatePost()
         {
-            if (input == null)
-            {
-                ModelState.AddModelError(
-                    string.Empty,
-                    "Thông tin địa chỉ không hợp lệ.");
-                return View(new AddressInputViewModel());
-            }
+            return RedirectToAction("Profile", "Account", new { addAddress = true });
+        }
 
-            if (!ModelState.IsValid)
-            {
-                return View(input);
-            }
-
-            var authenticatedEmail = User.Identity.Name;
-
-            if (string.IsNullOrWhiteSpace(authenticatedEmail))
-            {
-                FormsAuthentication.SignOut();
-                return RedirectToAction("Login", "Account");
-            }
-
-            var user = _userBll.GetByEmail(authenticatedEmail);
-
-            if (user == null || !user.IsActive)
-            {
-                FormsAuthentication.SignOut();
-                return RedirectToAction("Login", "Account");
-            }
-
-            var address = new Address
-            {
-                UserId = user.UserId,
-                RecipientName = input.RecipientName,
-                Phone = input.Phone,
-                Street = input.Street,
-                Ward = input.Ward,
-                District = input.District,
-                City = input.City,
-                IsDefault = input.IsDefault
-            };
-
-            try
-            {
-                _addressBll.Create(address);
-            }
-            catch (ArgumentException)
-            {
-                ModelState.AddModelError(
-                    string.Empty,
-                    "Không thể thêm địa chỉ giao hàng. Vui lòng kiểm tra thông tin và thử lại.");
-                return View(input);
-            }
-            catch (InvalidOperationException)
-            {
-                ModelState.AddModelError(
-                    string.Empty,
-                    "Không thể thêm địa chỉ giao hàng. Vui lòng kiểm tra thông tin và thử lại.");
-                return View(input);
-            }
-
-            TempData["SuccessMessage"] = "Đã thêm địa chỉ giao hàng.";
-            return RedirectToAction("Index", "Checkout");
+        /// <summary>
+        /// Redirects legacy edit form posts to the profile editor.
+        /// </summary>
+        [Authorize]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [ActionName("Edit")]
+        public ActionResult EditPost(int? id)
+        {
+            return RedirectToAction("Profile", "Account", new { addressId = id });
         }
     }
 }

@@ -18,6 +18,7 @@ namespace BeverageWebsite.Controllers
             "Không thể tạo tài khoản. Tên đăng nhập hoặc email có thể đã được sử dụng.";
 
         private readonly UserBLL _userBll;
+        private readonly AddressBLL _addressBll;
 
         /// <summary>
         /// Initializes the controller for account operations.
@@ -25,6 +26,7 @@ namespace BeverageWebsite.Controllers
         public AccountController()
         {
             _userBll = new UserBLL();
+            _addressBll = new AddressBLL();
         }
 
         /// <summary>
@@ -156,32 +158,109 @@ namespace BeverageWebsite.Controllers
         }
 
         /// <summary>
-        /// Displays the authenticated user's read-only profile.
+        /// Displays the authenticated user's profile and shipping-address management section.
         /// Signs out stale or inactive identities.
         /// </summary>
         /// <returns>The profile view for a valid active user; otherwise, the login page.</returns>
         [Authorize]
         [HttpGet]
         [ActionName("Profile")]
-        public ActionResult UserProfile()
+        public ActionResult UserProfile(int? addressId, bool addAddress = false)
         {
-            var authenticatedEmail = User.Identity.Name;
+            var user = GetAuthenticatedUser();
 
-            if (string.IsNullOrWhiteSpace(authenticatedEmail))
+            if (user == null)
             {
-                FormsAuthentication.SignOut();
                 return RedirectToAction("Login", "Account");
             }
 
-            var user = _userBll.GetByEmail(authenticatedEmail);
+            return View(BuildProfileViewModel(user, addressId, addAddress, null));
+        }
 
-            if (user == null || !user.IsActive)
+        /// <summary>
+        /// Creates or updates a shipping address from the profile page.
+        /// </summary>
+        /// <param name="addressId">The owned address to update; null creates a new address.</param>
+        /// <param name="input">The submitted address values.</param>
+        /// <returns>The profile view on failure or the profile page after saving.</returns>
+        [Authorize]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult SaveAddress(
+            int? addressId,
+            [Bind(Prefix = "AddressInput")] AddressInputViewModel input)
+        {
+            var user = GetAuthenticatedUser();
+
+            if (user == null)
             {
-                FormsAuthentication.SignOut();
                 return RedirectToAction("Login", "Account");
             }
 
-            return View(user);
+            if (input == null || !ModelState.IsValid)
+            {
+                ModelState.AddModelError(string.Empty, "Vui lòng kiểm tra lại thông tin địa chỉ giao hàng.");
+                return View(
+                    "Profile",
+                    BuildProfileViewModel(user, addressId, !addressId.HasValue, input));
+            }
+
+            try
+            {
+                if (addressId.HasValue)
+                {
+                    var existingAddress = _addressBll.GetByUserIdAndAddressId(user.UserId, addressId.Value);
+
+                    if (existingAddress == null)
+                    {
+                        TempData["ErrorMessage"] = "Không tìm thấy địa chỉ giao hàng cần chỉnh sửa.";
+                        return RedirectToAction("Profile");
+                    }
+
+                    _addressBll.Update(new Address
+                    {
+                        AddressId = existingAddress.AddressId,
+                        UserId = user.UserId,
+                        RecipientName = input.RecipientName,
+                        Phone = input.Phone,
+                        Street = input.Street,
+                        Ward = input.Ward,
+                        District = input.District,
+                        City = input.City,
+                        IsDefault = existingAddress.IsDefault
+                    });
+
+                    TempData["SuccessMessage"] = "Đã cập nhật địa chỉ giao hàng.";
+                    return RedirectToAction("Profile");
+                }
+
+                _addressBll.Create(new Address
+                {
+                    UserId = user.UserId,
+                    RecipientName = input.RecipientName,
+                    Phone = input.Phone,
+                    Street = input.Street,
+                    Ward = input.Ward,
+                    District = input.District,
+                    City = input.City,
+                    IsDefault = input.IsDefault
+                });
+
+                TempData["SuccessMessage"] = "Đã thêm địa chỉ giao hàng.";
+                return RedirectToAction("Profile");
+            }
+            catch (ArgumentException)
+            {
+                ModelState.AddModelError(string.Empty, "Không thể lưu địa chỉ giao hàng. Vui lòng kiểm tra thông tin và thử lại.");
+            }
+            catch (InvalidOperationException)
+            {
+                ModelState.AddModelError(string.Empty, "Không thể lưu địa chỉ giao hàng. Vui lòng thử lại.");
+            }
+
+            return View(
+                "Profile",
+                BuildProfileViewModel(user, addressId, !addressId.HasValue, input));
         }
 
         /// <summary>
@@ -195,6 +274,91 @@ namespace BeverageWebsite.Controllers
         {
             FormsAuthentication.SignOut();
             return RedirectToAction("Index", "Home");
+        }
+
+        private User GetAuthenticatedUser()
+        {
+            var authenticatedEmail = User.Identity.Name;
+
+            if (string.IsNullOrWhiteSpace(authenticatedEmail))
+            {
+                FormsAuthentication.SignOut();
+                return null;
+            }
+
+            var user = _userBll.GetByEmail(authenticatedEmail);
+
+            if (user == null || !user.IsActive)
+            {
+                FormsAuthentication.SignOut();
+                return null;
+            }
+
+            return user;
+        }
+
+        private ProfileViewModel BuildProfileViewModel(
+            User user,
+            int? addressId,
+            bool addAddress,
+            AddressInputViewModel submittedInput)
+        {
+            var viewModel = new ProfileViewModel
+            {
+                User = user,
+                Addresses = new System.Collections.Generic.List<Address>()
+            };
+
+            try
+            {
+                viewModel.Addresses = _addressBll.GetByUserId(user.UserId);
+            }
+            catch (InvalidOperationException)
+            {
+                TempData["ErrorMessage"] = "Không thể tải địa chỉ giao hàng. Vui lòng thử lại.";
+            }
+
+            if (viewModel.Addresses == null)
+            {
+                viewModel.Addresses = new System.Collections.Generic.List<Address>();
+            }
+
+            Address selectedAddress = null;
+
+            if (addressId.HasValue && addressId.Value > 0)
+            {
+                selectedAddress = viewModel.Addresses.Find(address => address.AddressId == addressId.Value);
+
+                if (selectedAddress == null)
+                {
+                    TempData["ErrorMessage"] = "Không tìm thấy địa chỉ giao hàng cần chỉnh sửa.";
+                }
+            }
+
+            if (selectedAddress != null)
+            {
+                viewModel.EditingAddressId = selectedAddress.AddressId;
+                viewModel.AddressInput = submittedInput ?? new AddressInputViewModel
+                {
+                    RecipientName = selectedAddress.RecipientName,
+                    Phone = selectedAddress.Phone,
+                    Street = selectedAddress.Street,
+                    Ward = selectedAddress.Ward,
+                    District = selectedAddress.District,
+                    City = selectedAddress.City,
+                    IsDefault = selectedAddress.IsDefault
+                };
+
+                return viewModel;
+            }
+
+            if (addAddress)
+            {
+                viewModel.IsAddingAddress = true;
+                viewModel.AddressInput = submittedInput ?? new AddressInputViewModel();
+            }
+
+            return viewModel;
         }
     }
 }

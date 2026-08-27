@@ -1,56 +1,219 @@
-@model BeverageWebsite.Models.User
+@model BeverageWebsite.ViewModels.ProfileViewModel
 
 @{
-    ViewBag.Title = "Hồ sơ cá nhân";
+    ViewBag.Title = "Hồ sơ của tôi";
+    var errorMessage = TempData["ErrorMessage"] as string;
+    var successMessage = TempData["SuccessMessage"] as string;
 }
 
 <main class="container">
     <div class="row">
         <div class="col-md-8">
-            <h1>Hồ sơ cá nhân</h1>
+            <h1>Hồ sơ của tôi</h1>
 
-            @if (Model == null)
+            @if (!string.IsNullOrWhiteSpace(errorMessage))
+            {
+                <div class="alert alert-danger">@errorMessage</div>
+            }
+
+            @if (!string.IsNullOrWhiteSpace(successMessage))
+            {
+                <div class="alert alert-success">@successMessage</div>
+            }
+
+            @if (Model == null || Model.User == null)
             {
                 <p>Không thể hiển thị thông tin hồ sơ.</p>
             }
             else
             {
-                <dl class="dl-horizontal">
-                    <dt>Tên đăng nhập</dt>
-                    <dd>@Model.UserName</dd>
+                <section aria-labelledby="profile-information-heading">
+                    <h2 id="profile-information-heading">Thông tin cá nhân</h2>
+                    <dl class="dl-horizontal">
+                        <dt>Tên đăng nhập</dt>
+                        <dd>@Model.User.UserName</dd>
 
-                    <dt>Email</dt>
-                    <dd>@Model.Email</dd>
+                        <dt>Email</dt>
+                        <dd>@Model.User.Email</dd>
 
-                    <dt>Họ và tên</dt>
-                    <dd>
-                        @(string.IsNullOrWhiteSpace(Model.FullName)
-                            ? "Chưa cập nhật"
-                            : Model.FullName)
-                    </dd>
+                        <dt>Họ và tên</dt>
+                        <dd>
+                            @(string.IsNullOrWhiteSpace(Model.User.FullName)
+                                ? "Chưa cập nhật"
+                                : Model.User.FullName)
+                        </dd>
 
-                    <dt>Số điện thoại</dt>
-                    <dd>
-                        @(string.IsNullOrWhiteSpace(Model.Phone)
-                            ? "Chưa cập nhật"
-                            : Model.Phone)
-                    </dd>
+                        <dt>Số điện thoại</dt>
+                        <dd>
+                            @(string.IsNullOrWhiteSpace(Model.User.Phone)
+                                ? "Chưa cập nhật"
+                                : Model.User.Phone)
+                        </dd>
 
-                    <dt>Ngày tạo tài khoản</dt>
-                    <dd>
-                        @(Model.CreatedAt == System.DateTime.MinValue
-                            ? "Chưa xác định"
-                            : Model.CreatedAt.ToString("dd/MM/yyyy HH:mm"))
-                    </dd>
-                </dl>
+                        <dt>Ngày tạo tài khoản</dt>
+                        <dd>
+                            @(Model.User.CreatedAt == System.DateTime.MinValue
+                                ? "Chưa xác định"
+                                : Model.User.CreatedAt.ToString("dd/MM/yyyy HH:mm"))
+                        </dd>
+                    </dl>
+                </section>
+
+                <hr />
+
+                <section id="shipping-address" aria-labelledby="shipping-address-heading">
+                    <h2 id="shipping-address-heading">Địa chỉ giao hàng</h2>
+                    <p class="help-block">Thông tin này sẽ được dùng cho đơn hàng tiếp theo của bạn.</p>
+
+                    @if (Model.Addresses == null || Model.Addresses.Count == 0)
+                    {
+                        <p>Bạn chưa có địa chỉ giao hàng.</p>
+                    }
+                    else
+                    {
+                        <h3>Địa chỉ đã lưu</h3>
+
+                        foreach (var address in Model.Addresses)
+                        {
+                            <div class="panel panel-default">
+                                <div class="panel-body">
+                                    <p>
+                                        <strong>@address.RecipientName</strong>
+                                        @if (address.IsDefault)
+                                        {
+                                            <span class="label label-primary">Mặc định</span>
+                                        }
+                                    </p>
+                                    <p>@address.Phone</p>
+                                    <p>
+                                        @address.Street
+                                        @if (!string.IsNullOrWhiteSpace(address.Ward))
+                                        {
+                                            <span>, @address.Ward</span>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(address.District))
+                                        {
+                                            <span>, @address.District</span>
+                                        }
+                                        <span>, @address.City</span>
+                                    </p>
+                                    @Html.ActionLink(
+                                        "Chỉnh sửa",
+                                        "Profile",
+                                        "Account",
+                                        new { addressId = address.AddressId },
+                                        new { @class = "btn btn-default btn-sm", aria_label = "Chỉnh sửa địa chỉ của " + address.RecipientName })
+                                </div>
+                            </div>
+                        }
+
+                    }
+
+                    @if (!Model.IsAddingAddress && !Model.EditingAddressId.HasValue)
+                    {
+                        <p>
+                            @Html.ActionLink(
+                                "Thêm địa chỉ mới",
+                                "Profile",
+                                "Account",
+                                new { addAddress = true },
+                                new { @class = "btn btn-default" })
+                        </p>
+                    }
+
+                    @if (Model.IsAddingAddress || Model.EditingAddressId.HasValue)
+                    {
+                        <h3>@(Model.IsAddingAddress ? "Thêm địa chỉ giao hàng" : "Chỉnh sửa địa chỉ giao hàng")</h3>
+
+                        using (Html.BeginForm("SaveAddress", "Account", FormMethod.Post, new { @class = "form-horizontal" }))
+                        {
+                            @Html.AntiForgeryToken()
+                            @Html.Hidden("addressId", Model.EditingAddressId)
+                            @Html.ValidationSummary(true, null, new { @class = "text-danger" })
+
+                            <div class="form-group">
+                            @Html.LabelFor(model => model.AddressInput.RecipientName, "Tên người nhận", new { @class = "control-label col-sm-3" })
+                            <div class="col-sm-9">
+                                @Html.TextBoxFor(model => model.AddressInput.RecipientName, new { @class = "form-control", maxlength = "200" })
+                                @Html.ValidationMessageFor(model => model.AddressInput.RecipientName, null, new { @class = "text-danger" })
+                            </div>
+                        </div>
+
+                            <div class="form-group">
+                            @Html.LabelFor(model => model.AddressInput.Phone, "Số điện thoại", new { @class = "control-label col-sm-3" })
+                            <div class="col-sm-9">
+                                @Html.TextBoxFor(model => model.AddressInput.Phone, new { @class = "form-control", maxlength = "20" })
+                                @Html.ValidationMessageFor(model => model.AddressInput.Phone, null, new { @class = "text-danger" })
+                            </div>
+                        </div>
+
+                            <div class="form-group">
+                            @Html.LabelFor(model => model.AddressInput.Street, "Địa chỉ đường", new { @class = "control-label col-sm-3" })
+                            <div class="col-sm-9">
+                                @Html.TextBoxFor(model => model.AddressInput.Street, new { @class = "form-control", maxlength = "255" })
+                                @Html.ValidationMessageFor(model => model.AddressInput.Street, null, new { @class = "text-danger" })
+                            </div>
+                        </div>
+
+                            <div class="form-group">
+                            @Html.LabelFor(model => model.AddressInput.Ward, "Phường hoặc xã", new { @class = "control-label col-sm-3" })
+                            <div class="col-sm-9">
+                                @Html.TextBoxFor(model => model.AddressInput.Ward, new { @class = "form-control", maxlength = "100" })
+                                @Html.ValidationMessageFor(model => model.AddressInput.Ward, null, new { @class = "text-danger" })
+                            </div>
+                        </div>
+
+                            <div class="form-group">
+                            @Html.LabelFor(model => model.AddressInput.District, "Quận hoặc huyện", new { @class = "control-label col-sm-3" })
+                            <div class="col-sm-9">
+                                @Html.TextBoxFor(model => model.AddressInput.District, new { @class = "form-control", maxlength = "100" })
+                                @Html.ValidationMessageFor(model => model.AddressInput.District, null, new { @class = "text-danger" })
+                            </div>
+                        </div>
+
+                            <div class="form-group">
+                            @Html.LabelFor(model => model.AddressInput.City, "Tỉnh hoặc thành phố", new { @class = "control-label col-sm-3" })
+                            <div class="col-sm-9">
+                                @Html.TextBoxFor(model => model.AddressInput.City, new { @class = "form-control", maxlength = "100" })
+                                @Html.ValidationMessageFor(model => model.AddressInput.City, null, new { @class = "text-danger" })
+                            </div>
+                        </div>
+
+                            if (Model.IsAddingAddress)
+                            {
+                            <div class="form-group">
+                                <div class="col-sm-offset-3 col-sm-9">
+                                    <div class="checkbox">
+                                        <label>
+                                            @Html.CheckBoxFor(model => model.AddressInput.IsDefault)
+                                            Đặt làm địa chỉ mặc định
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            }
+                            else if (Model.AddressInput.IsDefault)
+                            {
+                            <p class="help-block col-sm-offset-3">Đây là địa chỉ mặc định. Trạng thái mặc định sẽ được giữ nguyên.</p>
+                            }
+
+                            <div class="form-group">
+                            <div class="col-sm-offset-3 col-sm-9">
+                                <button type="submit" class="btn btn-primary">
+                                    @(Model.IsAddingAddress ? "Lưu địa chỉ" : "Lưu thay đổi")
+                                </button>
+
+                                @Html.ActionLink("Hủy", "Profile", "Account", null, new { @class = "btn btn-default" })
+                            </div>
+                        </div>
+                        }
+                    }
+                </section>
+
+                <p>
+                    @Html.ActionLink("Quay lại trang chủ", "Index", "Home", null, new { @class = "btn btn-default" })
+                </p>
             }
-
-            @Html.ActionLink(
-                "Quay lại trang chủ",
-                "Index",
-                "Home",
-                null,
-                new { @class = "btn btn-default" })
         </div>
     </div>
 </main>

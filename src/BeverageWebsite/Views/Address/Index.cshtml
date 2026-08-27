@@ -1,0 +1,82 @@
+@model System.Collections.Generic.IList<BeverageWebsite.Models.Address>
+
+@{
+    ViewBag.Title = "Địa chỉ giao hàng";
+    var errorMessage = TempData["ErrorMessage"] as string;
+    var successMessage = TempData["SuccessMessage"] as string;
+}
+
+<main class="container">
+    <div class="row">
+        <div class="col-md-8">
+            <h1>Địa chỉ giao hàng</h1>
+
+            @if (!string.IsNullOrWhiteSpace(errorMessage))
+            {
+                <div class="alert alert-danger">@errorMessage</div>
+            }
+
+            @if (!string.IsNullOrWhiteSpace(successMessage))
+            {
+                <div class="alert alert-success">@successMessage</div>
+            }
+
+            <p>
+                @Html.ActionLink(
+                    "Thêm địa chỉ giao hàng",
+                    "Create",
+                    "Address",
+                    null,
+                    new { @class = "btn btn-primary" })
+            </p>
+
+            @if (Model == null || Model.Count == 0)
+            {
+                <p>Bạn chưa có địa chỉ giao hàng nào.</p>
+            }
+            else
+            {
+                foreach (var address in Model)
+                {
+                    <div class="panel panel-default">
+                        <div class="panel-body">
+                            <p>
+                                <strong>@address.RecipientName</strong>
+                                @if (address.IsDefault)
+                                {
+                                    <span class="label label-primary">Mặc định</span>
+                                }
+                            </p>
+                            <p>@address.Phone</p>
+                            <p>
+                                @address.Street
+                                @if (!string.IsNullOrWhiteSpace(address.Ward))
+                                {
+                                    <span>, @address.Ward</span>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(address.District))
+                                {
+                                    <span>, @address.District</span>
+                                }
+                                <span>, @address.City</span>
+                            </p>
+                            @Html.ActionLink(
+                                "Sửa",
+                                "Edit",
+                                "Address",
+                                new { id = address.AddressId },
+                                new { @class = "btn btn-default" })
+                        </div>
+                    </div>
+                }
+            }
+
+            @Html.ActionLink(
+                "Quay lại hồ sơ",
+                "Profile",
+                "Account",
+                null,
+                new { @class = "btn btn-default" })
+        </div>
+    </div>
+</main>
