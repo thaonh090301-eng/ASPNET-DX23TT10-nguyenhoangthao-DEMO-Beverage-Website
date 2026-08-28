@@ -14,7 +14,26 @@ Quản trị viên: quản lý danh mục, sản phẩm, giá bán, nhãn sản 
 
 Hệ thống được tổ chức theo kiến trúc phân lớp nhằm tách biệt giao diện, điều khiển, xử lý nghiệp vụ và truy cập dữ liệu.
 
-2. Công nghệ sử dụng
+2. Thông tin đồ án
+
+Tên đề tài: Xây dựng website bán sản phẩm cà phê và đồ uống Little Cloud
+
+Sinh viên: Nguyễn Hoàng Thảo
+
+Mã sinh viên: 170123374
+
+Lớp: DX23TT10
+
+Nền tảng: ASP.NET MVC 5
+
+Ngôn ngữ: C#
+
+Framework: .NET Framework 4.8
+
+Cơ sở dữ liệu: SQL Server 2019
+
+Truy cập dữ liệu: ADO.NET
+3. Công nghệ sử dụng
 
 ASP.NET MVC 5
 
@@ -32,7 +51,7 @@ Razor View Engine
 
 HTML, CSS và JavaScript
 
-3. Kiến trúc hệ thống
+4. Kiến trúc hệ thống
 
 Luồng xử lý chính của ứng dụng:
 
@@ -64,7 +83,7 @@ DataProvider: quản lý kết nối, command, parameter và transaction bằng 
 
 SQL Server: lưu trữ dữ liệu của hệ thống.
 
-4. Cấu trúc repository
+5. Cấu trúc repository
 
 .
 ├── README.md
@@ -108,7 +127,7 @@ Filters/: các bộ lọc phục vụ kiểm soát truy cập, trong đó có c�
 
 Helpers/: các tiện ích dùng chung của ứng dụng.
 
-5. Cơ sở dữ liệu
+6. Cơ sở dữ liệu
 
 Tên cơ sở dữ liệu phát triển:
 
@@ -138,7 +157,7 @@ setup/Database.sql
 
 Nếu repository có script bổ sung cho dữ liệu sản phẩm/nhãn, kiểm tra và thực thi script theo hướng dẫn trong thư mục setup/ sau khi Database.sql được tạo thành công.
 
-6. Cài đặt và chạy project
+7. Cài đặt và chạy project
 
 Bước 1 – Chuẩn bị môi trường
 
@@ -192,11 +211,11 @@ http://localhost:51158/
 
 Port có thể khác tùy cấu hình máy.
 
-7. Tài khoản demo
+8. Tài khoản demo
 
 Các tài khoản dưới đây dùng cho môi trường demo/local của đồ án.
 
-7.1. Tài khoản quản trị viên
+8.1. Tài khoản quản trị viên
 
 Email:    admindemo@gmail.com
 Password: admin
@@ -218,7 +237,7 @@ Quản lý tồn kho.
 
 Xem và xử lý đơn hàng.
 
-7.2. Tài khoản khách hàng
+8.2. Tài khoản khách hàng
 
 Email:    customdemo@gmail.com
 Password: custom
@@ -244,9 +263,9 @@ Xem danh sách và chi tiết đơn hàng.
 
 Lưu ý: Hai tài khoản trên chỉ dành cho đồ án và môi trường local/demo. Không sử dụng các mật khẩu này cho môi trường production.
 
-8. Các chức năng chính
+9. Các chức năng chính
 
-8.1. Khách chưa đăng nhập
+9.1. Khách chưa đăng nhập
 
 Truy cập trang chủ.
 
@@ -264,7 +283,7 @@ Nhận biết sản phẩm còn món hoặc tạm hết món.
 
 Đăng nhập.
 
-8.2. Khách hàng
+9.2. Khách hàng
 
 Ngoài các chức năng công khai, khách hàng có thể:
 
@@ -284,7 +303,7 @@ Xem lịch sử đơn hàng.
 
 Xem chi tiết đơn hàng.
 
-8.3. Quản trị viên
+9.3. Quản trị viên
 
 Xem Dashboard.
 
@@ -310,7 +329,7 @@ Cập nhật trạng thái đơn hàng.
 
 Hủy đơn theo quy tắc nghiệp vụ.
 
-9. Quy tắc nghiệp vụ quan trọng
+10. Quy tắc nghiệp vụ quan trọng
 
 Trạng thái sản phẩm
 
@@ -352,7 +371,7 @@ Cancelled
 
 Khi hủy đơn hợp lệ, số lượng đã trừ khỏi tồn kho được hoàn lại theo quy tắc nghiệp vụ và phải đảm bảo không hoàn tồn kho nhiều lần.
 
-10. Quy trình demo đề xuất
+11. Quy trình demo đề xuất
 
 Demo Customer
 
@@ -377,7 +396,7 @@ Demo Admin
 → Xem chi tiết đơn
 → Cập nhật trạng thái / Hủy đơn
 
-11. Kiểm thử chức năng tiêu biểu
+12. Kiểm thử chức năng tiêu biểu
 
 Một số trường hợp nên kiểm tra khi chạy demo:
 
@@ -401,7 +420,7 @@ Hủy đơn hợp lệ và kiểm tra hoàn tồn kho.
 
 Giá của đơn hàng cũ không thay đổi khi giá sản phẩm hiện tại được chỉnh sửa.
 
-12. An toàn và toàn vẹn dữ liệu
+13. An toàn và toàn vẹn dữ liệu
 
 Project sử dụng các biện pháp chính:
 
@@ -423,7 +442,7 @@ Rollback khi transaction thất bại.
 
 Không sử dụng giá do client tự gửi để thay thế giá sản phẩm từ database trong checkout.
 
-13. Git – các lệnh cơ bản
+14. Git – các lệnh cơ bản
 
 Kiểm tra trạng thái:
 
@@ -448,7 +467,7 @@ git diff --cached --check
 git commit -m "your commit message"
 git push origin main
 
-14. Thông tin đồ án
+15. Thông tin đồ án
 
 Tên đề tài: Xây dựng website bán sản phẩm cà phê và đồ uống Little Cloud
 
