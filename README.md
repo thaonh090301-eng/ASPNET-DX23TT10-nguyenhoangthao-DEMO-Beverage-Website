@@ -33,6 +33,14 @@ Framework: .NET Framework 4.8
 Cơ sở dữ liệu: SQL Server 2019
 
 Truy cập dữ liệu: ADO.NET
+
+Email:    admindemo@gmail.com
+Password: admin
+Role:     Admin
+
+Email:    customdemo@gmail.com
+Password: custom
+Role:     Customer
 3. Công nghệ sử dụng
 
 ASP.NET MVC 5
@@ -466,23 +474,3 @@ git add -A
 git diff --cached --check
 git commit -m "your commit message"
 git push origin main
-
-15. Thông tin đồ án
-
-Tên đề tài: Xây dựng website bán sản phẩm cà phê và đồ uống Little Cloud
-
-Sinh viên: Nguyễn Hoàng Thảo
-
-Mã sinh viên: 170123374
-
-Lớp: DX23TT10
-
-Nền tảng: ASP.NET MVC 5
-
-Ngôn ngữ: C#
-
-Framework: .NET Framework 4.8
-
-Cơ sở dữ liệu: SQL Server 2019
-
-Truy cập dữ liệu: ADO.NET
