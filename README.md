@@ -1,185 +1,574 @@
 # Beverage Website
 
-## Giới thiệu
+Little Cloud – Beverage Website
 
-Website bán cà phê và đồ uống được phát triển bằng ASP.NET MVC 5, C#, .NET Framework 4.8, SQL Server 2019 và ADO.NET.
+Website bán cà phê và đồ uống được xây dựng bằng ASP.NET MVC 5, C#, .NET Framework 4.8, SQL Server 2019 và ADO.NET.
 
-## Công nghệ
+1. Giới thiệu
 
-- ASP.NET MVC 5
-- C#
-- .NET Framework 4.8
-- SQL Server 2019
-- ADO.NET
+Little Cloud là website bán cà phê và đồ uống với hai khu vực sử dụng chính:
 
-## Kiến trúc
+Khách hàng: xem menu, tìm kiếm sản phẩm, lọc theo danh mục, xem chi tiết, quản lý giỏ hàng, hồ sơ và địa chỉ giao hàng, đặt hàng và theo dõi đơn hàng.
 
-Kiến trúc mục tiêu của dự án:
+Quản trị viên: quản lý danh mục, sản phẩm, giá bán, nhãn sản phẩm, tồn kho và xử lý đơn hàng.
 
-```text
-Controllers -> BLL -> DAL -> DataProvider -> SQL Server
-```
+Hệ thống được tổ chức theo kiến trúc phân lớp nhằm tách biệt giao diện, điều khiển, xử lý nghiệp vụ và truy cập dữ liệu.
 
-- Models là các lớp POCO được xây dựng phù hợp với lược đồ cơ sở dữ liệu.
-- DAL sử dụng các câu lệnh ADO.NET có tham số để truy cập SQL Server.
-- BLL kiểm tra dữ liệu nghiệp vụ và chuyển việc lưu trữ dữ liệu cho DAL.
-- Controllers và Views là giai đoạn triển khai tiếp theo.
+2. Công nghệ sử dụng
 
-## Cấu trúc repository
+ASP.NET MVC 5
 
-```text
+C#
+
+.NET Framework 4.8
+
+SQL Server 2019
+
+SQL Server Management Studio (SSMS)
+
+ADO.NET
+
+Razor View Engine
+
+HTML, CSS và JavaScript
+
+3. Kiến trúc hệ thống
+
+Luồng xử lý chính của ứng dụng:
+
+Người dùng
+    ↓
+Views / Razor
+    ↓
+Controllers
+    ↓
+BLL (Business Logic Layer)
+    ↓
+DAL (Data Access Layer)
+    ↓
+DataProvider / ADO.NET
+    ↓
+SQL Server 2019
+
+Vai trò các tầng
+
+Views: hiển thị giao diện và nhận thao tác của người dùng.
+
+Controllers: tiếp nhận HTTP request, điều phối xử lý và trả kết quả về View.
+
+BLL: kiểm tra và thực hiện các quy tắc nghiệp vụ của hệ thống.
+
+DAL: thực hiện truy vấn và cập nhật dữ liệu.
+
+DataProvider: quản lý kết nối, command, parameter và transaction bằng ADO.NET.
+
+SQL Server: lưu trữ dữ liệu của hệ thống.
+
+4. Cấu trúc repository
+
 .
 ├── README.md
 ├── setup/
 ├── src/
+│   └── BeverageWebsite/
+│       ├── App_Start/
+│       ├── BLL/
+│       ├── Content/
+│       ├── Controllers/
+│       ├── DAL/
+│       ├── Filters/
+│       ├── Helpers/
+│       ├── Models/
+│       ├── ViewModels/
+│       ├── Views/
+│       ├── BeverageWebsite.csproj
+│       └── Web.config
 ├── progress-report/
 ├── thesis/
 ├── soft/
 └── docker/
-```
 
-## Thiết lập cơ sở dữ liệu
+Một số thành phần quan trọng
 
-1. Cài đặt SQL Server 2019.
-2. Thực thi `setup/Database.sql`.
-3. Cấu hình connection string `BeverageWebsiteDbConnection` trong `src/BeverageWebsite/Web.config` cho môi trường sử dụng.
-4. Build `BeverageWebsite.sln`.
+BLL/: các lớp xử lý nghiệp vụ như ProductBLL, CategoryBLL, CartBLL, OrderBLL, InventoryBLL, UserBLL và các lớp liên quan.
 
-Không lưu thông tin xác thực hoặc cấu hình kết nối production trong tài liệu hay mã nguồn được chia sẻ.
+Controllers/: các Controller phục vụ phía khách hàng và quản trị, gồm AccountController, AddressController, AdminController, CartController, CategoryController, CheckoutController, HomeController, NavigationController, OrderController và ProductController.
 
-## Trạng thái triển khai hiện tại
+DAL/: các lớp truy cập dữ liệu và DataProvider.
 
-| Hạng mục | Trạng thái |
-|---|---|
-| Solution ASP.NET MVC 5 và .NET Framework 4.8 | Đã hoàn thành |
-| Lược đồ cơ sở dữ liệu | Đã hoàn thành |
-| Models | Đã hoàn thành |
-| DataProvider và DAL | Đã hoàn thành, đã rà soát |
-| BLL | Đã hoàn thành, đã rà soát |
-| Controllers và Views nghiệp vụ | Giai đoạn tiếp theo |
-| Xác thực và phân quyền | Chưa thực hiện |
+Models/: các lớp dữ liệu tương ứng với các bảng trong cơ sở dữ liệu.
 
-## Models đã hoàn thành
+ViewModels/: dữ liệu trung gian phục vụ từng màn hình/giao diện.
 
-- `User`
-- `Address`
-- `Category`
-- `Product`
-- `Inventory`
-- `Promotion`
-- `Cart`
-- `CartItem`
-- `Order`
-- `OrderItem`
-- `Payment`
-- `Shipment`
-- `Review`
+Views/: các giao diện Razor của website và khu vực Admin.
 
-## Tầng DAL đã hoàn thành
+Content/: CSS, hình ảnh và tài nguyên giao diện.
 
-- `DataProvider`
-- `AddressDAL`
-- `CartDAL`
-- `CategoryDAL`
-- `InventoryDAL`
-- `OrderDAL`
-- `PaymentDAL`
-- `ProductDAL`
-- `PromotionDAL`
-- `ReviewDAL`
-- `ShipmentDAL`
-- `UserDAL`
+Filters/: các bộ lọc phục vụ kiểm soát truy cập, trong đó có cơ chế bảo vệ khu vực quản trị.
 
-Kết quả rà soát DAL cuối cùng:
+Helpers/: các tiện ích dùng chung của ứng dụng.
 
-- Critical: 0
-- High: 0
-- Medium: 0
-- Low: 0
+5. Cơ sở dữ liệu
 
-Các biện pháp đã hoàn thành trong DAL:
+Tên cơ sở dữ liệu phát triển:
 
-- SQL có tham số.
-- Danh sách cột tường minh.
-- Kiểm tra định danh.
-- Độ dài chuỗi phù hợp với lược đồ.
-- Precision và scale cho dữ liệu thập phân.
-- Scale phù hợp cho tham số `DateTime2`.
-- Kiểm tra chính xác số dòng bị ảnh hưởng của thao tác thay đổi dữ liệu.
-- Kiểm tra quyền sở hữu dữ liệu.
-- Thông báo ngoại lệ bên ngoài ở mức tổng quát.
-- Checkout trong một transaction.
-- Giá sản phẩm được đọc từ cơ sở dữ liệu.
-- Cập nhật tồn kho và dọn giỏ hàng trong checkout.
-- Lưu cache ordinal khi ánh xạ dữ liệu.
+BeverageWebsiteDb
 
-## Tầng BLL đã hoàn thành
+Các bảng chính
 
-- `AddressBLL`
-- `CartBLL`
-- `CategoryBLL`
-- `InventoryBLL`
-- `OrderBLL`
-- `PaymentBLL`
-- `ProductBLL`
-- `PromotionBLL`
-- `ReviewBLL`
-- `ShipmentBLL`
-- `UserBLL`
+User
+Address
+Category
+Product
+Inventory
+Promotion
+Cart
+CartItem
+Order
+OrderItem
+Payment
+Shipment
+Review
 
-Toàn bộ 11 lớp BLL được khai báo đúng một lần trong `BeverageWebsite.csproj`.
+Script khởi tạo
 
-- BLL không chứa SQL và không sử dụng trực tiếp `DataProvider`.
-- Kiểm tra dữ liệu trong BLL phù hợp với `Database.sql` và hợp đồng của DAL.
-- Các chữ ký phương thức bảo vệ quyền sở hữu được giữ nguyên.
-- Checkout đơn hàng vẫn được chuyển cho một lời gọi DAL có transaction.
-- Các truy vấn người dùng thông thường không trả về `PasswordHash`.
-- Các lớp thanh toán và giao hàng chỉ quản lý bản ghi đã lưu, không tự động tích hợp cổng thanh toán hoặc đơn vị vận chuyển.
+Script cơ sở dữ liệu nằm tại:
 
-Kết quả rà soát BLL cuối cùng:
+setup/Database.sql
 
-- Critical: 0
-- High: 0
-- Medium: 0
-- Low: 0
+Nếu repository có script bổ sung cho dữ liệu sản phẩm/nhãn, kiểm tra và thực thi script theo hướng dẫn trong thư mục setup/ sau khi Database.sql được tạo thành công.
 
-## Trạng thái build
+6. Cài đặt và chạy project
 
-Kết quả đã xác minh ngày 28/07/2026:
+Bước 1 – Chuẩn bị môi trường
 
-- Build warnings: 0
-- Build errors: 0
+Cài đặt:
 
-Kết quả này xác nhận solution build thành công; chưa thay thế cho kiểm thử runtime, kiểm thử tích hợp cơ sở dữ liệu hoặc kiểm thử đầu cuối.
+SQL Server 2019 hoặc phiên bản tương thích với project.
 
-## Giai đoạn tiếp theo
+SQL Server Management Studio.
 
-Giai đoạn tiếp theo là xây dựng Controllers và Views. Công việc đầu tiên dự kiến:
+.NET Framework 4.8.
 
-- Tạo `CategoryController` công khai, chỉ đọc.
-- Thêm các action `Index` và `Details`.
-- Chỉ sử dụng `CategoryBLL`.
-- Trả về HTTP 400 khi thiếu định danh bắt buộc.
-- Trả về HTTP 404 khi danh mục không tồn tại.
+Visual Studio có hỗ trợ ASP.NET MVC 5/.NET Framework hoặc môi trường build tương ứng.
 
-Controllers và Views nghiệp vụ chưa được xem là hoàn thành tại thời điểm cập nhật tài liệu này.
+Bước 2 – Tạo cơ sở dữ liệu
 
-## Kế hoạch ảnh sản phẩm
+Mở SQL Server Management Studio và thực thi:
 
-`Product.ImageUrl` hiện hỗ trợ một ảnh chính cho mỗi sản phẩm. Công việc ở giai đoạn MVC sau sẽ bổ sung:
+setup/Database.sql
 
-- Tải ảnh sản phẩm lên ứng dụng ASP.NET MVC.
-- Lưu trữ ảnh trong ứng dụng ASP.NET MVC.
-- Ảnh thu nhỏ của sản phẩm.
-- Ảnh trong trang chi tiết sản phẩm.
-- Ảnh sản phẩm trong giỏ hàng.
+Đảm bảo database BeverageWebsiteDb được tạo thành công.
 
-Chưa triển khai hoặc xác nhận hỗ trợ nhiều ảnh cho một sản phẩm ở giai đoạn này.
+Bước 3 – Cấu hình kết nối
 
-## Hướng dẫn build
+Mở:
 
-Từ thư mục gốc của repository, chạy:
+src/BeverageWebsite/Web.config
 
-```powershell
-dotnet build BeverageWebsite.sln
-```
+Kiểm tra connection string có tên:
+
+BeverageWebsiteDbConnection
+
+và điều chỉnh Server, Database hoặc phương thức xác thực theo môi trường máy local.
+
+Không đưa mật khẩu SQL Server, API key hoặc thông tin production vào repository.
+
+Bước 4 – Build
+
+Từ thư mục gốc repository:
+
+dotnet build BeverageWebsite.sln --no-incremental
+
+Hoặc mở solution bằng Visual Studio và Build Solution.
+
+Bước 5 – Chạy website
+
+Chạy project bằng Visual Studio/IIS Express theo cấu hình hiện tại của solution.
+
+Trong môi trường phát triển hiện tại, website được kiểm thử qua địa chỉ local dạng:
+
+http://localhost:51158/
+
+Port có thể khác tùy cấu hình máy.
+
+7. Tài khoản demo
+
+Các tài khoản dưới đây dùng cho môi trường demo/local của đồ án.
+
+7.1. Tài khoản quản trị viên
+
+Email:    admindemo@gmail.com
+Password: admin
+Role:     Admin
+
+Tài khoản này dùng để kiểm thử:
+
+Dashboard quản trị.
+
+Quản lý danh mục.
+
+Quản lý sản phẩm.
+
+Thay đổi giá sản phẩm.
+
+Quản lý nhãn sản phẩm.
+
+Quản lý tồn kho.
+
+Xem và xử lý đơn hàng.
+
+7.2. Tài khoản khách hàng
+
+Email:    customdemo@gmail.com
+Password: custom
+Role:     Customer
+
+Tài khoản này dùng để kiểm thử:
+
+Xem menu.
+
+Tìm kiếm và lọc sản phẩm.
+
+Xem chi tiết sản phẩm.
+
+Thêm/cập nhật/xóa sản phẩm trong giỏ hàng.
+
+Quản lý hồ sơ.
+
+Quản lý và cập nhật địa chỉ giao hàng.
+
+Đặt hàng.
+
+Xem danh sách và chi tiết đơn hàng.
+
+Lưu ý: Hai tài khoản trên chỉ dành cho đồ án và môi trường local/demo. Không sử dụng các mật khẩu này cho môi trường production.
+
+8. Các chức năng chính
+
+8.1. Khách chưa đăng nhập
+
+Truy cập trang chủ.
+
+Xem menu đồ uống.
+
+Xem danh mục sản phẩm.
+
+Tìm kiếm sản phẩm.
+
+Xem chi tiết sản phẩm.
+
+Nhận biết sản phẩm còn món hoặc tạm hết món.
+
+Đăng ký tài khoản.
+
+Đăng nhập.
+
+8.2. Khách hàng
+
+Ngoài các chức năng công khai, khách hàng có thể:
+
+Xem và chỉnh sửa thông tin hồ sơ.
+
+Thêm và cập nhật địa chỉ giao hàng.
+
+Thêm sản phẩm vào giỏ hàng.
+
+Cập nhật số lượng trong giỏ hàng.
+
+Xóa sản phẩm khỏi giỏ hàng.
+
+Đặt hàng.
+
+Xem lịch sử đơn hàng.
+
+Xem chi tiết đơn hàng.
+
+8.3. Quản trị viên
+
+Xem Dashboard.
+
+Quản lý danh mục đồ uống.
+
+Thêm, chỉnh sửa và xóa dữ liệu danh mục theo quyền được cấp.
+
+Thêm, chỉnh sửa và xóa sản phẩm theo quyền được cấp.
+
+Cập nhật giá sản phẩm.
+
+Quản lý nhãn Best seller, Món mới, Món nổi bật.
+
+Quản lý tồn kho và ngưỡng nhập lại.
+
+Theo dõi sản phẩm tạm hết món.
+
+Xem danh sách đơn hàng.
+
+Xem chi tiết đơn hàng.
+
+Cập nhật trạng thái đơn hàng.
+
+Hủy đơn theo quy tắc nghiệp vụ.
+
+9. Quy tắc nghiệp vụ quan trọng
+
+Trạng thái sản phẩm
+
+Sản phẩm đang hoạt động và còn tồn kho: khách có thể xem và đặt mua.
+
+Sản phẩm đang hoạt động nhưng tồn kho bằng 0: vẫn hiển thị trên menu với trạng thái Tạm hết món, nhưng không cho thêm vào giỏ.
+
+Sản phẩm ngừng bán: không hiển thị cho khách hàng.
+
+Nhãn sản phẩm
+
+Các nhãn chính:
+
+Best seller
+Món mới
+Món nổi bật
+
+Sản phẩm có nhãn được ưu tiên khi hiển thị trên menu theo logic sắp xếp của ứng dụng.
+
+Tồn kho
+
+Không cho phép tồn kho âm.
+
+Kiểm tra tồn kho khi thao tác với giỏ hàng.
+
+Kiểm tra lại tồn kho trước khi tạo đơn.
+
+Khi checkout thành công, tồn kho được giảm theo số lượng đặt.
+
+Đơn hàng
+
+Trạng thái chính:
+
+Pending → Confirmed → Processing → Completed
+
+Đơn hàng đủ điều kiện có thể chuyển sang:
+
+Cancelled
+
+Khi hủy đơn hợp lệ, số lượng đã trừ khỏi tồn kho được hoàn lại theo quy tắc nghiệp vụ và phải đảm bảo không hoàn tồn kho nhiều lần.
+
+10. Quy trình demo đề xuất
+
+Demo Customer
+
+Đăng nhập
+→ Menu
+→ Tìm kiếm/lọc sản phẩm
+→ Xem chi tiết
+→ Thêm vào giỏ
+→ Kiểm tra giỏ hàng
+→ Hồ sơ / Địa chỉ giao hàng
+→ Đặt hàng
+→ Xem đơn hàng
+
+Demo Admin
+
+Đăng nhập Admin
+→ Dashboard
+→ Quản lý sản phẩm
+→ Chỉnh sửa giá/nhãn
+→ Quản lý tồn kho
+→ Xem đơn hàng
+→ Xem chi tiết đơn
+→ Cập nhật trạng thái / Hủy đơn
+
+11. Kiểm thử chức năng tiêu biểu
+
+Một số trường hợp nên kiểm tra khi chạy demo:
+
+Đăng nhập đúng/sai thông tin.
+
+Customer không truy cập được khu vực Admin.
+
+Tìm kiếm và lọc sản phẩm.
+
+Thêm, cập nhật và xóa sản phẩm trong giỏ.
+
+Sản phẩm tồn kho bằng 0 hiển thị Tạm hết món và không thể thêm vào giỏ.
+
+Cập nhật địa chỉ trong Hồ sơ và kiểm tra địa chỉ mới khi checkout.
+
+Đặt hàng thành công và kiểm tra tồn kho.
+
+Admin cập nhật trạng thái đơn hàng.
+
+Hủy đơn hợp lệ và kiểm tra hoàn tồn kho.
+
+Giá của đơn hàng cũ không thay đổi khi giá sản phẩm hiện tại được chỉnh sửa.
+
+12. An toàn và toàn vẹn dữ liệu
+
+Project sử dụng các biện pháp chính:
+
+SQL query có parameter.
+
+Kiểm tra định danh và dữ liệu đầu vào.
+
+Khóa chính và khóa ngoại.
+
+Ràng buộc UNIQUE và CHECK tại database.
+
+Kiểm tra quyền sở hữu dữ liệu.
+
+Phân quyền Admin/Customer.
+
+Checkout thực hiện trong transaction.
+
+Rollback khi transaction thất bại.
+
+Không sử dụng giá do client tự gửi để thay thế giá sản phẩm từ database trong checkout.
+
+13. Trạng thái project
+
+Các thành phần chính của website đã được triển khai gồm:
+
+Hạng mục
+
+Trạng thái
+
+ASP.NET MVC 5 / .NET Framework 4.8
+
+Hoàn thành
+
+Cơ sở dữ liệu
+
+Hoàn thành
+
+Models
+
+Hoàn thành
+
+DataProvider / ADO.NET
+
+Hoàn thành
+
+DAL
+
+Hoàn thành
+
+BLL
+
+Hoàn thành
+
+Controllers
+
+Hoàn thành
+
+Views nghiệp vụ
+
+Hoàn thành
+
+Xác thực và phân quyền
+
+Hoàn thành
+
+Customer storefront
+
+Hoàn thành
+
+Giỏ hàng / Checkout
+
+Hoàn thành
+
+Quản lý địa chỉ
+
+Hoàn thành
+
+Quản lý sản phẩm
+
+Hoàn thành
+
+Quản lý tồn kho
+
+Hoàn thành
+
+Quản lý và xử lý đơn hàng
+
+Hoàn thành
+
+14. Một số lỗi thường gặp
+
+Không kết nối được database
+
+Kiểm tra:
+
+SQL Server đang chạy.
+
+Database BeverageWebsiteDb đã được tạo.
+
+Connection string BeverageWebsiteDbConnection đúng với máy local.
+
+Instance SQL Server đúng với cấu hình.
+
+Build lỗi
+
+Thử:
+
+dotnet clean BeverageWebsite.sln
+dotnet build BeverageWebsite.sln --no-incremental
+
+Đăng nhập không thành công
+
+Kiểm tra:
+
+Database đã có tài khoản demo.
+
+Email và mật khẩu nhập đúng.
+
+Tài khoản đang hoạt động.
+
+Role của tài khoản đúng với mục đích kiểm thử.
+
+Website chạy nhưng dữ liệu không hiển thị
+
+Kiểm tra database đã có dữ liệu Category, Product, Inventory và các dữ liệu liên quan chưa.
+
+15. Git – các lệnh cơ bản
+
+Kiểm tra trạng thái:
+
+git status
+
+Lấy code mới nhất:
+
+git pull origin main
+
+Kiểm tra lỗi whitespace:
+
+git diff --check
+
+Build trước khi commit:
+
+dotnet build BeverageWebsite.sln --no-incremental -v:minimal
+
+Commit:
+
+git add -A
+git diff --cached --check
+git commit -m "your commit message"
+git push origin main
+
+16. Thông tin đồ án
+
+Tên đề tài: Xây dựng website bán sản phẩm cà phê và đồ uống Little Cloud
+
+Sinh viên: Nguyễn Hoàng Thảo
+
+Mã sinh viên: 170123374
+
+Lớp: DX23TT10
+
+Nền tảng: ASP.NET MVC 5
+
+Ngôn ngữ: C#
+
+Framework: .NET Framework 4.8
+
+Cơ sở dữ liệu: SQL Server 2019
+
+Truy cập dữ liệu: ADO.NET
