@@ -423,112 +423,7 @@ Rollback khi transaction thất bại.
 
 Không sử dụng giá do client tự gửi để thay thế giá sản phẩm từ database trong checkout.
 
-13. Trạng thái project
-
-Các thành phần chính của website đã được triển khai gồm:
-
-Hạng mục
-
-Trạng thái
-
-ASP.NET MVC 5 / .NET Framework 4.8
-
-Hoàn thành
-
-Cơ sở dữ liệu
-
-Hoàn thành
-
-Models
-
-Hoàn thành
-
-DataProvider / ADO.NET
-
-Hoàn thành
-
-DAL
-
-Hoàn thành
-
-BLL
-
-Hoàn thành
-
-Controllers
-
-Hoàn thành
-
-Views nghiệp vụ
-
-Hoàn thành
-
-Xác thực và phân quyền
-
-Hoàn thành
-
-Customer storefront
-
-Hoàn thành
-
-Giỏ hàng / Checkout
-
-Hoàn thành
-
-Quản lý địa chỉ
-
-Hoàn thành
-
-Quản lý sản phẩm
-
-Hoàn thành
-
-Quản lý tồn kho
-
-Hoàn thành
-
-Quản lý và xử lý đơn hàng
-
-Hoàn thành
-
-14. Một số lỗi thường gặp
-
-Không kết nối được database
-
-Kiểm tra:
-
-SQL Server đang chạy.
-
-Database BeverageWebsiteDb đã được tạo.
-
-Connection string BeverageWebsiteDbConnection đúng với máy local.
-
-Instance SQL Server đúng với cấu hình.
-
-Build lỗi
-
-Thử:
-
-dotnet clean BeverageWebsite.sln
-dotnet build BeverageWebsite.sln --no-incremental
-
-Đăng nhập không thành công
-
-Kiểm tra:
-
-Database đã có tài khoản demo.
-
-Email và mật khẩu nhập đúng.
-
-Tài khoản đang hoạt động.
-
-Role của tài khoản đúng với mục đích kiểm thử.
-
-Website chạy nhưng dữ liệu không hiển thị
-
-Kiểm tra database đã có dữ liệu Category, Product, Inventory và các dữ liệu liên quan chưa.
-
-15. Git – các lệnh cơ bản
+13. Git – các lệnh cơ bản
 
 Kiểm tra trạng thái:
 
@@ -553,7 +448,7 @@ git diff --cached --check
 git commit -m "your commit message"
 git push origin main
 
-16. Thông tin đồ án
+14. Thông tin đồ án
 
 Tên đề tài: Xây dựng website bán sản phẩm cà phê và đồ uống Little Cloud
 
